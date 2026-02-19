@@ -1,0 +1,2799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Greek Flashcards</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0c1a;
+    --surface: #16132a;
+    --card-bg: #1e1a35;
+    --gold: #c9a84c;
+    --gold-light: #e8c97a;
+    --marble: #f0ece0;
+    --text: #e8e4d8;
+    --muted: #7a7090;
+    --green: #4caf7a;
+    --red: #e05a5a;
+    --blue: #6b8fd6;
+    --panel-bg: #13102a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Crimson Pro', serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background-image: 
+      radial-gradient(ellipse at 20% 20%, rgba(100, 80, 180, 0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(60, 40, 120, 0.1) 0%, transparent 50%);
+  }
+
+  h1 {
+    font-family: 'Noto Serif', serif;
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    color: var(--gold);
+    text-align: center;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 24px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+  }
+
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .filter-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--muted);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  .filter-btn.active {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: rgba(201, 168, 76, 0.1);
+  }
+
+  .progress-bar-wrap {
+    width: 100%;
+    max-width: 520px;
+    height: 3px;
+    background: var(--surface);
+    border-radius: 2px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    transition: width 0.4s ease;
+    border-radius: 2px;
+  }
+
+  .progress-text {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-bottom: 20px;
+    letter-spacing: 0.08em;
+  }
+
+  .card-scene {
+    width: 100%;
+    flex: 1;
+    min-width: 0;
+    max-width: 480px;
+    height: 260px;
+    perspective: 1000px;
+    cursor: pointer;
+    margin-bottom: 0;
+  }
+
+  .card-inner {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-scene.flipped .card-inner { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 28px 28px 48px;
+    border: 1px solid rgba(201, 168, 76, 0.2);
+    background: var(--card-bg);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  .card-front::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    border-radius: 16px 16px 0 0;
+  }
+
+  .card-back {
+    transform: rotateY(180deg);
+    background: linear-gradient(135deg, #1a1630, #221e3a);
+  }
+
+  /* card-bottom-bar: flags + info button embedded in card */
+  .card-bottom-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .card-flags { display: flex; gap: 6px; align-items: center; }
+
+  .card-flag-btn {
+    padding: 3px 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: transparent;
+    font-size: 0.72rem;
+    font-family: 'Crimson Pro', serif;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    color: rgba(255,255,255,0.25);
+    transition: all 0.16s;
+    white-space: nowrap;
+  }
+  .card-flag-btn:hover { color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.2); }
+  .card-flag-btn.studying-active { color: var(--gold); border-color: rgba(201,168,76,0.5); background: rgba(201,168,76,0.08); }
+  .card-flag-btn.known-active { color: var(--green); border-color: rgba(76,175,122,0.5); background: rgba(76,175,122,0.08); }
+
+  .card-info-btn {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 1px solid rgba(107,143,214,0.3);
+    background: transparent;
+    color: rgba(107,143,214,0.5);
+    font-family: 'Noto Serif', serif;
+    font-style: italic;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.16s;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .card-info-btn:hover { color: var(--blue); border-color: var(--blue); background: rgba(107,143,214,0.1); }
+  .card-info-btn.info-open { color: var(--blue); border-color: var(--blue); background: rgba(107,143,214,0.15); }
+
+  .card-category {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    margin-bottom: 12px;
+    opacity: 0.8;
+  }
+
+  .card-word {
+    font-family: 'Noto Serif', serif;
+    font-size: clamp(2rem, 7vw, 3.2rem);
+    color: var(--marble);
+    text-align: center;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  .card-hint { color: var(--muted); font-size: 0.85rem; font-style: italic; }
+  .card-article { color: rgba(107,143,214,0.55); font-family: 'Noto Serif', serif; font-size: clamp(1.1rem,3.5vw,1.6rem); margin-right: 0.2em; vertical-align: baseline; }
+  .card-word.is-number { font-size: clamp(3rem, 12vw, 5rem); letter-spacing: -0.02em; }
+
+  .card-translation {
+    font-family: 'Noto Serif', serif;
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    color: var(--gold-light);
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .card-transliteration { display: none; }
+
+  .card-example {
+    color: var(--muted);
+    font-size: 0.82rem;
+    text-align: center;
+    font-style: italic;
+    margin-top: 8px;
+    max-width: 320px;
+    line-height: 1.5;
+  }
+
+  .flip-hint {
+    color: var(--muted);
+    font-size: 0.72rem;
+    text-align: center;
+    margin: 6px 0 10px;
+    letter-spacing: 0.08em;
+    opacity: 0.6;
+  }
+
+  /* ===== TOP CONTROLS ===== */
+  .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    width: 100%;
+    max-width: 520px;
+  }
+
+  /* category filter pills */
+  .filter-btn {
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--muted);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.82rem;
+    transition: all 0.18s;
+    letter-spacing: 0.04em;
+  }
+  .filter-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.1); }
+
+  /* status filter (multi-select pills) */
+  .status-filters {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+
+  .sflt-btn {
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: transparent;
+    color: rgba(255,255,255,0.3);
+    cursor: pointer;
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.78rem;
+    transition: all 0.18s;
+    letter-spacing: 0.04em;
+  }
+  .sflt-btn:hover { border-color: rgba(255,255,255,0.25); color: rgba(255,255,255,0.6); }
+  .sflt-btn.active-all { color: var(--text); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.05); }
+  .sflt-btn.active-studying { color: var(--gold); border-color: rgba(201,168,76,0.5); background: rgba(201,168,76,0.08); }
+  .sflt-btn.active-known { color: var(--green); border-color: rgba(76,175,122,0.5); background: rgba(76,175,122,0.08); }
+  .sflt-btn.active-unseen { color: var(--blue); border-color: rgba(107,143,214,0.5); background: rgba(107,143,214,0.08); }
+
+  /* direction toggle — small, tucked in top-row */
+  .dir-toggle {
+    display: flex;
+    gap: 2px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    padding: 2px;
+  }
+  .dir-btn {
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.3);
+    cursor: pointer;
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    transition: all 0.15s;
+  }
+  .dir-btn.active { background: rgba(255,255,255,0.09); color: var(--text); }
+
+  /* ===== CARD LAYOUT ===== */
+  .card-scene {
+    width: 100%;
+    max-width: 480px;
+    height: 260px;
+    perspective: 1000px;
+    cursor: pointer;
+    margin-bottom: 0;
+  }
+
+  /* nav row: prev / card / next — card takes flex space */
+  .card-nav-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 520px;
+    margin-bottom: 4px;
+  }
+
+  .btn-nav {
+    width: 40px; height: 40px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03);
+    color: rgba(255,255,255,0.4);
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.16s;
+    display: flex; align-items: center; justify-content: center;
+    user-select: none;
+  }
+  .btn-nav:hover { background: rgba(255,255,255,0.08); color: var(--gold); border-color: rgba(201,168,76,0.4); }
+
+  .card-scene-wrap { flex: 1; min-width: 0; }
+
+  /* ===== GRAMMAR STANDALONE PANEL ===== */
+  .grammar-standalone {
+    width: 100%;
+    background: var(--panel-bg);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 12px;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1), padding 0.3s, margin 0.3s;
+    padding: 0 28px;
+    box-sizing: border-box;
+  }
+  .grammar-standalone.open {
+    max-height: 900px;
+    padding: 20px 28px 24px;
+    margin-top: 16px;
+    overflow-y: auto;
+  }
+  .grammar-standalone::-webkit-scrollbar { width: 4px; }
+  .grammar-standalone::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+
+  /* ===== STATS ===== */
+  .stats {
+    display: flex;
+    gap: 18px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin: 8px 0 16px;
+    letter-spacing: 0.05em;
+  }
+  .stat span { font-weight: 600; }
+  .stat .green { color: var(--green); }
+  .stat .yellow { color: var(--gold-light); }
+  .stat .blue { color: var(--blue); }
+
+  .btn-reset-corner {
+    position: fixed;
+    bottom: 14px; right: 16px;
+    background: none;
+    border: none;
+    color: rgba(122,112,144,0.28);
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.68rem;
+    cursor: pointer;
+    letter-spacing: 0.07em;
+    transition: color 0.2s;
+    z-index: 10;
+  }
+  .btn-reset-corner:hover { color: var(--red); }
+
+  /* ===== GRAMMAR PANEL STYLES (reused inside inline) ===== */
+  .grammar-word-header {
+    font-family: 'Noto Serif', serif;
+    font-size: 1.5rem;
+    color: var(--gold);
+    margin-bottom: 2px;
+  }
+  .grammar-word-ru { color: var(--muted); font-size: 0.85rem; margin-bottom: 3px; font-style: italic; }
+  .grammar-word-translit { color: var(--blue); font-size: 0.8rem; margin-bottom: 14px; letter-spacing: 0.05em; }
+  .grammar-section-title {
+    font-family: 'Noto Serif', serif;
+    font-size: 0.9rem;
+    color: var(--gold-light);
+    margin: 14px 0 8px;
+    padding-bottom: 3px;
+    border-bottom: 1px solid rgba(201,168,76,0.15);
+  }
+  .gtable { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-bottom: 8px; }
+  .gtable th { background: rgba(201,168,76,0.07); color: var(--gold); font-weight:600; padding:6px 10px; text-align:left; font-family:'Crimson Pro',serif; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; border-bottom:1px solid rgba(201,168,76,0.12); }
+  .gtable td { padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.04); color:var(--text); vertical-align:top; white-space:nowrap; }
+  .gtable tr:last-child td { border-bottom:none; }
+  .gtable td.label { color:var(--muted); font-size:0.78rem; white-space:nowrap; width:100px; }
+  .gtable td.greek { font-family:'Noto Serif',serif; font-size:1rem; color:var(--marble); white-space:nowrap; }
+  .gtable td.translit { color:var(--blue); font-size:0.78rem; }
+  .gtable td.meaning { color:var(--muted); font-size:0.78rem; font-style:italic; }
+  .grammar-note { background:rgba(107,143,214,0.07); border:1px solid rgba(107,143,214,0.18); border-radius:6px; padding:8px 12px; color:var(--muted); font-size:0.8rem; line-height:1.55; margin-top:10px; }
+  .no-table-msg { color:var(--muted); font-style:italic; font-size:0.85rem; padding:6px 0 3px; line-height:1.5; }
+  .tab-row { display:flex; gap:5px; margin-bottom:10px; flex-wrap:wrap; }
+  .tab-btn { padding:4px 10px; border-radius:5px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:var(--muted); cursor:pointer; font-family:'Crimson Pro',serif; font-size:0.78rem; transition:all 0.18s; }
+  .tab-btn.active { background:rgba(201,168,76,0.12); border-color:var(--gold); color:var(--gold); }
+
+  .game-area { width: 100%; max-width: 780px; display: flex; flex-direction: column; align-items: center; }
+
+  .btn-shuffle {
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(107,143,214,0.35);
+    background: transparent;
+    color: rgba(107,143,214,0.55);
+    cursor: pointer;
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    transition: all 0.18s;
+  }
+  .btn-shuffle:hover { border-color: var(--blue); color: var(--blue); background: rgba(107,143,214,0.08); }
+</style>
+</head>
+<body>
+
+<h1>Ελληνικά</h1>
+<p class="subtitle">Greek Essential Words</p>
+
+<!-- category filters -->
+<div class="filters" id="filters"></div>
+
+<!-- status filters (multi-select) + direction toggle -->
+<div class="top-row">
+  <div class="dir-toggle">
+    <button class="dir-btn active" onclick="setMode('el-ru')" id="mode-el-ru">ΕΛ→РУ</button>
+    <button class="dir-btn" onclick="setMode('ru-el')" id="mode-ru-el">РУ→ΕΛ</button>
+  </div>
+  <button class="btn-shuffle" id="shuffleBtn" onclick="toggleShuffle()" title="Перемешать карточки">⇄ Перемешать</button>
+</div>
+
+<div class="status-filters">
+  <button class="sflt-btn active-all" id="sf-all" onclick="toggleStatusFilter('all')">Все</button>
+  <button class="sflt-btn" id="sf-unseen" onclick="toggleStatusFilter('unseen')">Новые</button>
+  <button class="sflt-btn" id="sf-studying" onclick="toggleStatusFilter('studying')">📌 К изучению</button>
+  <button class="sflt-btn" id="sf-known" onclick="toggleStatusFilter('known')">✓ Знаю</button>
+</div>
+
+<div class="game-area" id="gameArea">
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+  </div>
+  <p class="progress-text" id="progressText">0 / 0</p>
+
+  <div class="card-nav-row">
+    <button class="btn-nav" onclick="prevCard()">‹</button>
+    <div class="card-scene-wrap">
+      <div class="card-scene" id="cardScene" onclick="flipCard()">
+        <div class="card-inner">
+          <div class="card-face card-front">
+            <div class="card-category" id="frontCategory"></div>
+            <div class="card-word" id="frontWord"></div>
+            <div class="card-hint" id="frontHint"></div>
+            <div class="card-bottom-bar">
+              <div class="card-flags">
+                <button class="card-flag-btn" id="studyingBtn" onclick="ev(event,toggleStudying)" title="К изучению">📌 К изучению</button>
+                <button class="card-flag-btn" id="knownBtn" onclick="ev(event,toggleKnown)" title="Знаю">✓ Знаю</button>
+              </div>
+              <button class="card-info-btn" id="infoBtn" onclick="ev(event,toggleGrammar)" title="Таблица">i</button>
+            </div>
+          </div>
+          <div class="card-face card-back">
+            <div class="card-category" id="backCategory"></div>
+            <div class="card-word card-translation" id="backTranslation"></div>
+            <div class="card-transliteration" id="backTranslit"></div>
+            <div class="card-example" id="backExample"></div>
+            <div class="card-bottom-bar">
+              <div class="card-flags">
+                <button class="card-flag-btn" id="studyingBtn2" onclick="ev(event,toggleStudying)" title="К изучению">📌 К изучению</button>
+                <button class="card-flag-btn" id="knownBtn2" onclick="ev(event,toggleKnown)" title="Знаю">✓ Знаю</button>
+              </div>
+              <button class="card-info-btn" id="infoBtn2" onclick="ev(event,toggleGrammar)" title="Таблица">i</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <button class="btn-nav" onclick="nextCard()">›</button>
+  </div>
+
+  <p class="flip-hint" id="flipHint">↕ нажми на карточку, чтобы перевернуть</p>
+
+  <div class="stats">
+    <div class="stat">Знаю: <span class="green" id="statKnown">0</span></div>
+    <div class="stat">К изучению: <span class="yellow" id="statStudying">0</span></div>
+    <div class="stat">Новые: <span class="blue" id="statUnseen">0</span></div>
+    <div class="stat">Всего: <span id="statTotal">0</span></div>
+  </div>
+
+  <!-- standalone grammar panel -->
+  <div class="grammar-standalone" id="grammarInline">
+    <div id="grammarContent"></div>
+  </div>
+</div>
+
+<button class="btn-reset-corner" onclick="clearProgress()">↺ сброс</button>
+
+
+<script>// ============================================================
+// greek-words.js — словарный и грамматический банк данных
+// Автоматически загружается в greek-flashcards.html
+// ============================================================
+
+const WORDS = [
+  // ===== ВОПРОСЫ =====
+  {el:'τι', ru:'что / что это', cat:'Вопрос', type:'particle', ex:'Τι κάνεις; — Что ты делаешь?'},
+  {el:'ποιος', ru:'кто (м. р.)', cat:'Вопрос', type:'adj', ex:'Ποιος είσαι; — Кто ты?'},
+  {el:'πού', ru:'где / куда', cat:'Вопрос', type:'adverb', ex:'Πού είσαι; — Где ты?'},
+  {el:'πότε', ru:'когда', cat:'Вопрос', type:'adverb', ex:'Πότε φεύγεις; — Когда ты уходишь?'},
+  {el:'πώς', ru:'как', cat:'Вопрос', type:'adverb', ex:'Πώς είσαι; — Как ты?'},
+  {el:'γιατί', ru:'почему', cat:'Вопрос', type:'particle', ex:'Γιατί; — Почему?'},
+  {el:'πόσο', ru:'сколько', cat:'Вопрос', type:'adj', ex:'Πόσο κάνει; — Сколько стоит?'},
+  {el:'ποιο', ru:'какой / который (ср. р.)', cat:'Вопрос', type:'adj', ex:'Ποιο θες; — Какой ты хочешь?'},
+
+  // ===== ГЛАГОЛЫ =====
+  {el:'λέω', ru:'говорить / сказать', cat:'Глаголы', type:'verb', ex:'Τι λες; — Что говоришь?'},
+  {el:'πάω', ru:'идти / ехать', cat:'Глаголы', type:'verb', ex:'Πάω σπίτι. — Иду домой.'},
+  {el:'έρχομαι', ru:'приходить', cat:'Глаголы', type:'verb', ex:'Έρχομαι τώρα. — Иду сейчас.'},
+  {el:'κάνω', ru:'делать', cat:'Глаголы', type:'verb', ex:'Τι κάνεις; — Что делаешь?'},
+  {el:'βλέπω', ru:'видеть', cat:'Глаголы', type:'verb', ex:'Το βλέπω. — Я это вижу.'},
+  {el:'ακούω', ru:'слышать', cat:'Глаголы', type:'verb', ex:'Δεν ακούω. — Не слышу.'},
+  {el:'τρώω', ru:'есть / кушать', cat:'Глаголы', type:'verb', ex:'Τρώω τώρα. — Сейчас ем.'},
+  {el:'πίνω', ru:'пить', cat:'Глаголы', type:'verb', ex:'Πίνω καφέ. — Пью кофе.'},
+  {el:'μένω', ru:'жить / оставаться', cat:'Глаголы', type:'verb', ex:'Μένω στην Αθήνα. — Живу в Афинах.'},
+  {el:'δουλεύω', ru:'работать', cat:'Глаголы', type:'verb', ex:'Δουλεύω εδώ. — Работаю здесь.'},
+  {el:'παίζω', ru:'играть', cat:'Глаголы', type:'verb', ex:'Παίζω μουσική. — Играю музыку.'},
+  {el:'διαβάζω', ru:'читать / учиться', cat:'Глаголы', type:'verb', ex:'Διαβάζω ελληνικά. — Учу греческий.'},
+  {el:'γράφω', ru:'писать', cat:'Глаголы', type:'verb', ex:'Γράφω γράμμα. — Пишу письмо.'},
+  {el:'αγαπώ', ru:'любить', cat:'Глаголы', type:'verb', ex:'Σε αγαπώ. — Люблю тебя.'},
+  {el:'μιλώ', ru:'разговаривать', cat:'Глаголы', type:'verb', ex:'Μιλάς ελληνικά; — Говоришь по-гречески?'},
+  {el:'βοηθώ', ru:'помогать', cat:'Глаголы', type:'verb', ex:'Μπορείς να βοηθήσεις; — Можешь помочь?'},
+  {el:'σκέφτομαι', ru:'думать / размышлять', cat:'Глаголы', type:'verb', ex:'Σκέφτομαι. — Думаю.'},
+  {el:'αισθάνομαι', ru:'чувствовать себя', cat:'Глаголы', type:'verb', ex:'Αισθάνομαι καλά. — Чувствую себя хорошо.'},
+  {el:'φεύγω', ru:'уходить / уезжать', cat:'Глаголы', type:'verb', ex:'Φεύγω αύριο. — Уезжаю завтра.'},
+  {el:'περιμένω', ru:'ждать', cat:'Глаголы', type:'verb', ex:'Περίμενε λίγο. — Подожди немного.'},
+  {el:'μπαίνω', ru:'входить', cat:'Глаголы', type:'verb', ex:'Μπαίνω στο σπίτι. — Вхожу в дом.'},
+  {el:'βγαίνω', ru:'выходить', cat:'Глаголы', type:'verb', ex:'Βγαίνω έξω. — Выхожу наружу.'},
+  {el:'ανεβαίνω', ru:'подниматься', cat:'Глаголы', type:'verb', ex:'Ανεβαίνω στον 3ο όροφο. — Поднимаюсь на 3-й этаж.'},
+  {el:'κατεβαίνω', ru:'спускаться', cat:'Глаголы', type:'verb', ex:'Κατεβαίνω από το λεωφορείο. — Выхожу из автобуса.'},
+  {el:'τρέχω', ru:'бежать', cat:'Глаголы', type:'verb', ex:'Τρέχω στο πάρκο. — Бегу в парке.'},
+  {el:'περπατώ', ru:'ходить пешком', cat:'Глаголы', type:'verb', ex:'Περπατώ κάθε πρωί. — Хожу пешком каждое утро.'},
+  {el:'ταξιδεύω', ru:'путешествовать', cat:'Глаголы', type:'verb', ex:'Ταξιδεύω κάθε καλοκαίρι. — Путешествую каждое лето.'},
+  {el:'ανοίγω', ru:'открывать', cat:'Глаголы', type:'verb', ex:'Άνοιξε την πόρτα. — Открой дверь.'},
+  {el:'κλείνω', ru:'закрывать', cat:'Глаголы', type:'verb', ex:'Κλείσε το παράθυρο. — Закрой окно.'},
+  {el:'παίρνω', ru:'брать / получать', cat:'Глаголы', type:'verb', ex:'Παίρνω τηλέφωνο. — Звоню (беру телефон).'},
+  {el:'δίνω', ru:'давать', cat:'Глаголы', type:'verb', ex:'Δίνω ένα δώρο. — Даю подарок.'},
+  {el:'βάζω', ru:'класть / надевать', cat:'Глаголы', type:'verb', ex:'Βάζω το παλτό. — Надеваю пальто.'},
+  {el:'βρίσκω', ru:'находить', cat:'Глаголы', type:'verb', ex:'Βρίσκω τα κλειδιά. — Нахожу ключи.'},
+  {el:'χάνω', ru:'терять / пропускать', cat:'Глаголы', type:'verb', ex:'Χάνω το λεωφορείο. — Пропускаю автобус.'},
+  {el:'αγοράζω', ru:'покупать', cat:'Глаголы', type:'verb', ex:'Αγοράζω ψωμί. — Покупаю хлеб.'},
+  {el:'πληρώνω', ru:'платить', cat:'Глаголы', type:'verb', ex:'Πληρώνω με κάρτα. — Плачу картой.'},
+  {el:'στέλνω', ru:'отправлять', cat:'Глаголы', type:'verb', ex:'Στέλνω μήνυμα. — Отправляю сообщение.'},
+  {el:'κάθομαι', ru:'сидеть', cat:'Глаголы', type:'verb', ex:'Κάθομαι στην καρέκλα. — Сижу на стуле.'},
+  {el:'κοιμάμαι', ru:'спать', cat:'Глаголы', type:'verb', ex:'Κοιμάμαι νωρίς. — Сплю рано.'},
+  {el:'ξυπνώ', ru:'просыпаться', cat:'Глаголы', type:'verb', ex:'Ξυπνώ στις 7. — Просыпаюсь в 7.'},
+  {el:'μαγειρεύω', ru:'готовить (еду)', cat:'Глаголы', type:'verb', ex:'Μαγειρεύω κάθε μέρα. — Готовлю каждый день.'},
+  {el:'πλένω', ru:'мыть', cat:'Глаголы', type:'verb', ex:'Πλένω τα χέρια. — Мою руки.'},
+  {el:'καταλαβαίνω', ru:'понимать', cat:'Глаголы', type:'verb', ex:'Δεν καταλαβαίνω. — Не понимаю.'},
+  {el:'ρωτώ', ru:'спрашивать', cat:'Глаголы', type:'verb', ex:'Ρωτώ τον δρόμο. — Спрашиваю дорогу.'},
+  {el:'απαντώ', ru:'отвечать', cat:'Глаголы', type:'verb', ex:'Απαντώ στο email. — Отвечаю на email.'},
+  {el:'θυμάμαι', ru:'помнить', cat:'Глаголы', type:'verb', ex:'Θυμάμαι το όνομά σου. — Помню твоё имя.'},
+  {el:'ξεχνώ', ru:'забывать', cat:'Глаголы', type:'verb', ex:'Ξεχνώ πάντα τα κλειδιά. — Всегда забываю ключи.'},
+  {el:'γνωρίζω', ru:'знать / познакомиться', cat:'Глаголы', type:'verb', ex:'Γνωρίζω πολλούς. — Знаю многих.'},
+  {el:'αλλάζω', ru:'менять(ся)', cat:'Глаголы', type:'verb', ex:'Αλλάζω τα ρούχα. — Переодеваюсь.'},
+  {el:'ξεκινώ', ru:'начинать / отправляться', cat:'Глаголы', type:'verb', ex:'Ξεκινώ τώρα. — Начинаю сейчас.'},
+  {el:'τελειώνω', ru:'заканчивать(ся)', cat:'Глаголы', type:'verb', ex:'Τελειώνει η ταινία. — Заканчивается фильм.'},
+  {el:'προτιμώ', ru:'предпочитать', cat:'Глаголы', type:'verb', ex:'Προτιμώ τον καφέ. — Предпочитаю кофе.'},
+  {el:'προσπαθώ', ru:'стараться', cat:'Глаголы', type:'verb', ex:'Προσπαθώ κάθε μέρα. — Стараюсь каждый день.'},
+  {el:'τηλεφωνώ', ru:'звонить по телефону', cat:'Глаголы', type:'verb', ex:'Τηλεφωνώ κάθε βράδυ. — Звоню каждый вечер.'},
+  {el:'παραγγέλνω', ru:'заказывать', cat:'Глаголы', type:'verb', ex:'Παραγγέλνω καφέ. — Заказываю кофе.'},
+  {el:'πονώ', ru:'болеть / чувствовать боль', cat:'Глаголы', type:'verb', ex:'Με πονάει το κεφάλι. — Болит голова.'},
+  {el:'γελώ', ru:'смеяться', cat:'Глаголы', type:'verb', ex:'Γελώ πολύ. — Много смеюсь.'},
+  {el:'κλαίω', ru:'плакать', cat:'Глаголы', type:'verb', ex:'Κλαίει το παιδί. — Ребёнок плачет.'},
+  {el:'ζω', ru:'жить (существовать)', cat:'Глаголы', type:'verb', ex:'Ζω στην Αθήνα. — Живу в Афинах.'},
+
+  // ===== МОДАЛЬНЫЕ И СЛУЖЕБНЫЕ ГЛАГОЛЫ =====
+  {el:'είμαι', ru:'быть (я есть)', cat:'Модальные глаголы', type:'verb', ex:'Είμαι καλά. — Я в порядке.'},
+  {el:'έχω', ru:'иметь', cat:'Модальные глаголы', type:'verb', ex:'Έχω χρόνο. — У меня есть время.'},
+  {el:'θέλω', ru:'хотеть', cat:'Модальные глаголы', type:'verb', ex:'Θέλω νερό. — Хочу воды.'},
+  {el:'μπορώ', ru:'мочь / уметь', cat:'Модальные глаголы', type:'verb', ex:'Μπορώ να σε βοηθήσω. — Могу тебе помочь.'},
+  {el:'πρέπει', ru:'нужно / должен', cat:'Модальные глаголы', type:'verb', ex:'Πρέπει να πάμε. — Нам нужно идти.'},
+  {el:'ξέρω', ru:'знать', cat:'Модальные глаголы', type:'verb', ex:'Δεν ξέρω. — Я не знаю.'},
+  {el:'χρειάζομαι', ru:'нуждаться', cat:'Модальные глаголы', type:'verb', ex:'Χρειάζομαι βοήθεια. — Нужна помощь.'},
+  {el:'αρέσει', ru:'нравиться', cat:'Модальные глаголы', type:'verb', ex:'Μου αρέσει. — Мне нравится.'},
+  {el:'αφήνω', ru:'оставлять / позволять', cat:'Модальные глаголы', type:'verb', ex:'Άφησέ με ήσυχο. — Оставь меня в покое.'},
+  {el:'γίνομαι', ru:'становиться / происходить', cat:'Модальные глаголы', type:'verb', ex:'Τι γίνεται; — Что происходит?'},
+  {el:'υπάρχει', ru:'существовать / есть', cat:'Модальные глаголы', type:'verb', ex:'Υπάρχει νερό; — Есть вода?'},
+  {el:'φαίνομαι', ru:'казаться / выглядеть', cat:'Модальные глаголы', type:'verb', ex:'Φαίνεσαι κουρασμένος. — Выглядишь уставшим.'},
+  {el:'φοβάμαι', ru:'бояться', cat:'Модальные глаголы', type:'verb', ex:'Φοβάμαι τα σκυλιά. — Боюсь собак.'},
+  {el:'ελπίζω', ru:'надеяться', cat:'Модальные глаголы', type:'verb', ex:'Ελπίζω να έρθεις. — Надеюсь, что придёшь.'},
+
+  // ===== ПРИЛАГАТЕЛЬНЫЕ =====
+  {el:'μεγάλος', ru:'большой', cat:'Прилагательные', type:'adj', ex:'Ένα μεγάλο σπίτι. — Большой дом.'},
+  {el:'μικρός', ru:'маленький', cat:'Прилагательные', type:'adj', ex:'Ένα μικρό παιδί. — Маленький ребёнок.'},
+  {el:'καλός', ru:'хороший', cat:'Прилагательные', type:'adj', ex:'Καλός άνθρωπος. — Хороший человек.'},
+  {el:'κακός', ru:'плохой', cat:'Прилагательные', type:'adj', ex:'Κακή ιδέα. — Плохая идея.'},
+  {el:'ωραίος', ru:'красивый / классный', cat:'Прилагательные', type:'adj', ex:'Πολύ ωραίο! — Очень красиво!'},
+  {el:'γρήγορος', ru:'быстрый', cat:'Прилагательные', type:'adj', ex:'Πήγαινε γρήγορα! — Иди быстро!'},
+  {el:'αργός', ru:'медленный', cat:'Прилагательные', type:'adj', ex:'Πήγαινε αργά. — Иди медленно.'},
+  {el:'πολύς', ru:'много / очень', cat:'Прилагательные', type:'adj', ex:'Πολύ καλά! — Очень хорошо!'},
+  {el:'λίγος', ru:'мало / немного', cat:'Прилагательные', type:'adj', ex:'Λίγο νερό. — Немного воды.'},
+  {el:'νέος', ru:'новый / молодой', cat:'Прилагательные', type:'adj', ex:'Νέος φίλος. — Новый друг.'},
+  {el:'παλιός', ru:'старый / старинный', cat:'Прилагательные', type:'adj', ex:'Παλιό σπίτι. — Старый дом.'},
+  {el:'ακριβός', ru:'дорогой', cat:'Прилагательные', type:'adj', ex:'Είναι ακριβό. — Это дорого.'},
+  {el:'φτηνός', ru:'дешёвый', cat:'Прилагательные', type:'adj', ex:'Είναι φτηνό. — Это дёшево.'},
+  {el:'εύκολος', ru:'лёгкий / простой', cat:'Прилагательные', type:'adj', ex:'Είναι εύκολο. — Это легко.'},
+  {el:'δύσκολος', ru:'трудный / сложный', cat:'Прилагательные', type:'adj', ex:'Είναι δύσκολο. — Это трудно.'},
+  {el:'σωστός', ru:'правильный', cat:'Прилагательные', type:'adj', ex:'Η σωστή απάντηση. — Правильный ответ.'},
+  {el:'λάθος', ru:'неправильный / ошибка', cat:'Прилагательные', type:'adj', ex:'Είναι λάθος. — Это неправильно.'},
+  {el:'ίδιος', ru:'такой же / сам', cat:'Прилагательные', type:'adj', ex:'Το ίδιο, παρακαλώ. — То же самое.'},
+  {el:'διαφορετικός', ru:'другой / различный', cat:'Прилагательные', type:'adj', ex:'Κάτι διαφορετικό. — Что-то другое.'},
+  {el:'ελεύθερος', ru:'свободный', cat:'Прилагательные', type:'adj', ex:'Είμαι ελεύθερος. — Я свободен.'},
+  {el:'σημαντικός', ru:'важный', cat:'Прилагательные', type:'adj', ex:'Είναι σημαντικό. — Это важно.'},
+
+  // ===== НАРЕЧИЯ =====
+  {el:'τώρα', ru:'сейчас', cat:'Наречие', type:'adverb', ex:'Τώρα! — Сейчас!'},
+  {el:'εδώ', ru:'здесь', cat:'Наречие', type:'adverb', ex:'Είμαι εδώ. — Я здесь.'},
+  {el:'εκεί', ru:'там', cat:'Наречие', type:'adverb', ex:'Πάμε εκεί. — Пойдём туда.'},
+  {el:'πάντα', ru:'всегда', cat:'Наречие', type:'adverb', ex:'Πάντα μαζί. — Всегда вместе.'},
+  {el:'ποτέ', ru:'никогда', cat:'Наречие', type:'adverb', ex:'Ποτέ δεν έχω χρόνο. — Никогда нет времени.'},
+  {el:'συχνά', ru:'часто', cat:'Наречие', type:'adverb', ex:'Συχνά έρχομαι εδώ. — Часто прихожу сюда.'},
+  {el:'μαζί', ru:'вместе', cat:'Наречие', type:'adverb', ex:'Μαζί είμαστε δυνατοί. — Вместе мы сильны.'},
+  {el:'μόνο', ru:'только', cat:'Наречие', type:'adverb', ex:'Μόνο εσύ. — Только ты.'},
+  {el:'ακόμα', ru:'ещё / всё ещё', cat:'Наречие', type:'adverb', ex:'Ακόμα εδώ. — Всё ещё здесь.'},
+  {el:'ήδη', ru:'уже', cat:'Наречие', type:'adverb', ex:'Ήδη φύγε. — Уже ушёл.'},
+  {el:'πάρα πολύ', ru:'очень много / слишком', cat:'Наречие', type:'adverb', ex:'Πάρα πολύ ωραίο! — Очень красиво!'},
+  {el:'σχεδόν', ru:'почти', cat:'Наречие', type:'adverb', ex:'Σχεδόν έτοιμος. — Почти готов.'},
+  {el:'αμέσως', ru:'сразу / немедленно', cat:'Наречие', type:'adverb', ex:'Έρχομαι αμέσως. — Иду сразу.'},
+  {el:'ίσως', ru:'может быть', cat:'Наречие', type:'adverb', ex:'Ίσως αύριο. — Может, завтра.'},
+  {el:'μάλλον', ru:'скорее всего / наверное', cat:'Наречие', type:'adverb', ex:'Μάλλον όχι. — Скорее нет.'},
+  {el:'πάλι', ru:'снова', cat:'Наречие', type:'adverb', ex:'Πάλι εδώ; — Снова здесь?'},
+  {el:'πολύ', ru:'очень', cat:'Наречие', type:'adverb', ex:'Είναι πολύ ωραίο. — Это очень красиво.'},
+  {el:'καλά', ru:'хорошо', cat:'Наречие', type:'adverb', ex:'Μιλάς πολύ καλά ελληνικά. — Говоришь очень хорошо по-гречески.'},
+  {el:'άσχημα', ru:'плохо / нехорошо', cat:'Наречие', type:'adverb', ex:'Αισθάνομαι άσχημα. — Чувствую себя плохо.'},
+  {el:'αλλού', ru:'в другом месте / куда-то ещё', cat:'Наречие', type:'adverb', ex:'Πάμε αλλού. — Пойдём в другое место.'},
+  {el:'παντού', ru:'везде', cat:'Наречие', type:'adverb', ex:'Τον ψάχνω παντού. — Ищу его везде.'},
+  {el:'πουθενά', ru:'нигде', cat:'Наречие', type:'adverb', ex:'Δεν τον βρίσκω πουθενά. — Нигде его не нахожу.'},
+  {el:'κάπου', ru:'где-то', cat:'Наречие', type:'adverb', ex:'Το άφησα κάπου εδώ. — Оставил это где-то здесь.'},
+  {el:'πότε πότε', ru:'иногда / время от времени', cat:'Наречие', type:'adverb', ex:'Πότε πότε πηγαίνω εκεί. — Иногда хожу туда.'},
+  {el:'πια', ru:'больше (уже не)', cat:'Наречие', type:'adverb', ex:'Δεν έρχεται πια. — Больше не приходит.'},
+  {el:'μόλις', ru:'только что', cat:'Наречие', type:'adverb', ex:'Μόλις έφτασα. — Только что приехал.'},
+  {el:'περίπου', ru:'примерно / около', cat:'Наречие', type:'adverb', ex:'Είναι περίπου 5 χιλιόμετρα. — Примерно 5 километров.'},
+  {el:'μαζί με', ru:'вместе с', cat:'Наречие', type:'phrase', ex:'Πάω μαζί με τη φίλη μου. — Иду вместе с подругой.'},
+  {el:'χωριστά', ru:'отдельно', cat:'Наречие', type:'adverb', ex:'Θέλω να πληρώσω χωριστά. — Хочу платить отдельно.'},
+  {el:'αντίθετα', ru:'наоборот / напротив', cat:'Наречие', type:'adverb', ex:'Αντίθετα, μου αρέσει πολύ. — Наоборот, мне очень нравится.'},
+
+  // ===== ЧАСТИЦЫ =====
+  {el:'ναι', ru:'да', cat:'Частица', type:'particle', ex:'Ναι, βέβαια. — Да, конечно.'},
+  {el:'όχι', ru:'нет', cat:'Частица', type:'particle', ex:'Όχι, ευχαριστώ. — Нет, спасибо.'},
+  {el:'και', ru:'и / тоже', cat:'Частица', type:'particle', ex:'Εγώ και εσύ. — Я и ты.'},
+  {el:'ή', ru:'или', cat:'Частица', type:'particle', ex:'Καφέ ή τσάι; — Кофе или чай?'},
+  {el:'αλλά', ru:'но / однако', cat:'Частица', type:'particle', ex:'Θέλω, αλλά δεν μπορώ. — Хочу, но не могу.'},
+  {el:'γιατί', ru:'потому что', cat:'Частица', type:'particle', ex:'Γιατί είμαι κουρασμένος. — Потому что устал.'},
+  {el:'αν', ru:'если', cat:'Частица', type:'particle', ex:'Αν θέλεις. — Если хочешь.'},
+  {el:'όταν', ru:'когда (союз)', cat:'Частица', type:'particle', ex:'Όταν έρθεις. — Когда придёшь.'},
+  {el:'πριν', ru:'до / раньше', cat:'Частица', type:'particle', ex:'Πριν φύγεις. — Прежде чем уйти.'},
+  {el:'μετά', ru:'после / потом', cat:'Частица', type:'adverb', ex:'Τα λέμε μετά. — Поговорим потом.'},
+  {el:'παρακαλώ', ru:'пожалуйста', cat:'Частица', type:'particle', ex:'Παρακαλώ, ένα νερό. — Пожалуйста, воды.'},
+  {el:'ευχαριστώ', ru:'спасибо', cat:'Частица', type:'particle', ex:'Ευχαριστώ πολύ! — Большое спасибо!'},
+  {el:'συγγνώμη', ru:'извини / прости', cat:'Частица', type:'particle', ex:'Συγγνώμη, δεν ξέρω. — Извини, не знаю.'},
+  {el:'βέβαια', ru:'конечно', cat:'Частица', type:'adverb', ex:'Βέβαια! — Конечно!'},
+  {el:'επίσης', ru:'также / тоже', cat:'Частица', type:'adverb', ex:'Επίσης ευχαριστώ. — Также спасибо.'},
+  {el:'δεν', ru:'не (отрицание в наст./прош./буд.)', cat:'Частица', type:'particle', ex:'Δεν ξέρω. — Я не знаю.'},
+  {el:'μην', ru:'не (запрет / субъюнктив)', cat:'Частица', type:'particle', ex:'Μην το κάνεις αυτό. — Не делай этого.'},
+  {el:'να', ru:'να (частица субъюнктива)', cat:'Частица', type:'particle', ex:'Θέλω να πάω. — Хочу пойти.'},
+  {el:'ότι', ru:'что (союз, косв. речь)', cat:'Частица', type:'particle', ex:'Λέει ότι είναι κουρασμένος. — Говорит, что устал.'},
+  {el:'πως', ru:'что (союз, разг.)', cat:'Частица', type:'particle', ex:'Νομίζω πως έχεις δίκιο. — Думаю, что ты прав.'},
+  {el:'όμως', ru:'однако / но (после запятой)', cat:'Частица', type:'particle', ex:'Θέλω, όμως δεν μπορώ. — Хочу, однако не могу.'},
+  {el:'λοιπόν', ru:'итак / ну вот / значит', cat:'Частица', type:'particle', ex:'Λοιπόν, τι κάνουμε; — Итак, что делаем?'},
+  {el:'έτσι', ru:'так / вот так', cat:'Частица', type:'adverb', ex:'Έτσι είναι η ζωή. — Такова жизнь.'},
+  {el:'πάντως', ru:'во всяком случае / всё же', cat:'Частица', type:'adverb', ex:'Πάντως, εγώ δεν συμφωνώ. — Во всяком случае, я не согласен.'},
+  {el:'τελικά', ru:'в итоге / в конце концов', cat:'Частица', type:'adverb', ex:'Τελικά δεν ήρθε. — В итоге не пришёл.'},
+  {el:'καθώς', ru:'пока / по мере того как', cat:'Частица', type:'particle', ex:'Καθώς περπατούσα, άρχισε να βρέχει. — Пока шёл, начался дождь.'},
+  {el:'ενώ', ru:'пока / тогда как / хотя', cat:'Частица', type:'particle', ex:'Ενώ μιλούσε, έφυγα. — Пока он говорил, я ушёл.'},
+  {el:'μόλις', ru:'только что / как только', cat:'Частица', type:'adverb', ex:'Μόλις έφτασα. — Только что приехал.'},
+  {el:'μήπως', ru:'может быть / случайно (в вопросе)', cat:'Частица', type:'particle', ex:'Μήπως ξέρεις πού είναι; — Не знаешь случайно, где это?'},
+  {el:'άρα', ru:'значит / следовательно', cat:'Частица', type:'particle', ex:'Δεν ήρθε, άρα δεν ξέρει. — Не пришёл, значит не знает.'},
+  {el:'επειδή', ru:'потому что (развёрнутое)', cat:'Частица', type:'particle', ex:'Έφυγα επειδή ήμουν κουρασμένος. — Ушёл, потому что устал.'},
+  {el:'αφού', ru:'раз уж / после того как', cat:'Частица', type:'particle', ex:'Αφού το λες, σε πιστεύω. — Раз ты так говоришь, верю тебе.'},
+  {el:'μέχρι να', ru:'до тех пор пока не', cat:'Частица', type:'phrase', ex:'Περίμενε μέχρι να έρθω. — Жди, пока не приду.'},
+
+  // ===== МЕСТОИМЕНИЯ =====
+  {el:'εγώ', ru:'я', cat:'Местоимение', type:'pronoun', ex:'Εγώ είμαι εδώ. — Я здесь.'},
+  {el:'εσύ', ru:'ты', cat:'Местоимение', type:'pronoun', ex:'Εσύ τι θες; — Ты чего хочешь?'},
+  {el:'αυτός', ru:'он', cat:'Местоимение', type:'pronoun', ex:'Αυτός είναι φίλος μου. — Он мой друг.'},
+  {el:'αυτή', ru:'она', cat:'Местоимение', type:'pronoun', ex:'Αυτή είναι η αδερφή μου. — Она моя сестра.'},
+  {el:'εμείς', ru:'мы', cat:'Местоимение', type:'pronoun', ex:'Εμείς πάμε. — Мы идём.'},
+  {el:'εσείς', ru:'вы', cat:'Местоимение', type:'pronoun', ex:'Εσείς είστε εδώ; — Вы здесь?'},
+  {el:'αυτοί', ru:'они (м.)', cat:'Местоимение', type:'pronoun', ex:'Αυτοί φεύγουν. — Они уходят.'},
+  {el:'αυτό', ru:'это / оно (ср. р.)', cat:'Местоимение', type:'pronoun', ex:'Αυτό είναι ωραίο. — Это красиво.'},
+  {el:'κάτι', ru:'что-то', cat:'Местоимение', type:'pronoun', ex:'Κάτι συμβαίνει. — Что-то происходит.'},
+  {el:'κάποιος', ru:'кто-то / некий', cat:'Местоимение', type:'pronoun', ex:'Κάποιος τηλεφώνησε. — Кто-то позвонил.'},
+  {el:'τίποτα', ru:'ничего', cat:'Местоимение', type:'pronoun', ex:'Δεν θέλω τίποτα. — Ничего не хочу.'},
+  {el:'κανείς', ru:'никто', cat:'Местоимение', type:'pronoun', ex:'Δεν ήρθε κανείς. — Никто не пришёл.'},
+  {el:'όλοι', ru:'все', cat:'Местоимение', type:'pronoun', ex:'Όλοι εδώ; — Все здесь?'},
+  {el:'κάθε', ru:'каждый', cat:'Местоимение', type:'pronoun', ex:'Κάθε μέρα. — Каждый день.'},
+  {el:'μου', ru:'мой / моя / моё (мне)', cat:'Местоимение', type:'pronoun', ex:'Το σπίτι μου. — Мой дом.'},
+  {el:'σου', ru:'твой / твоя / твоё (тебе)', cat:'Местоимение', type:'pronoun', ex:'Πώς είναι η μαμά σου; — Как твоя мама?'},
+  {el:'του', ru:'его', cat:'Местоимение', type:'pronoun', ex:'Το βιβλίο του. — Его книга.'},
+  {el:'της', ru:'её', cat:'Местоимение', type:'pronoun', ex:'Το δωμάτιο της. — Её комната.'},
+  {el:'μας', ru:'наш / наша / наше', cat:'Местоимение', type:'pronoun', ex:'Η οικογένειά μας. — Наша семья.'},
+  {el:'σας', ru:'ваш / ваша / ваше', cat:'Местоимение', type:'pronoun', ex:'Το όνομά σας; — Ваше имя?'},
+  {el:'τους', ru:'их', cat:'Местоимение', type:'pronoun', ex:'Το σπίτι τους. — Их дом.'},
+
+  // ===== ПРЕДЛОГИ =====
+  {el:'σε', ru:'в / на / к', cat:'Предлог', type:'particle', ex:'Πάω στην Αθήνα. — Еду в Афины.'},
+  {el:'από', ru:'от / из', cat:'Предлог', type:'particle', ex:'Από πού είσαι; — Откуда ты?'},
+  {el:'με', ru:'с / вместе с', cat:'Предлог', type:'particle', ex:'Έλα μαζί μου. — Пойдём со мной.'},
+  {el:'για', ru:'для / о / за', cat:'Предлог', type:'particle', ex:'Αυτό είναι για σένα. — Это для тебя.'},
+  {el:'χωρίς', ru:'без', cat:'Предлог', type:'particle', ex:'Χωρίς εσένα. — Без тебя.'},
+  {el:'μέχρι', ru:'до (места / времени)', cat:'Предлог', type:'particle', ex:'Μέχρι αύριο. — До завтра.'},
+  {el:'πάνω', ru:'на / сверху / больше', cat:'Предлог', type:'adverb', ex:'Πάνω από 10 ευρώ. — Больше 10 евро.'},
+  {el:'κάτω', ru:'под / снизу / меньше', cat:'Предлог', type:'adverb', ex:'Κάτω από το τραπέζι. — Под столом.'},
+  {el:'δίπλα', ru:'рядом', cat:'Предлог', type:'adverb', ex:'Δίπλα στο σπίτι. — Рядом с домом.'},
+  {el:'μπροστά', ru:'перед / спереди', cat:'Предлог', type:'adverb', ex:'Μπροστά στην πόρτα. — Перед дверью.'},
+  {el:'πίσω', ru:'за / позади', cat:'Предлог', type:'adverb', ex:'Πίσω από το σπίτι. — За домом.'},
+  {el:'μέσα', ru:'внутри', cat:'Предлог', type:'adverb', ex:'Μέσα στο σπίτι. — Внутри дома.'},
+  {el:'έξω', ru:'снаружи / на улице', cat:'Предлог', type:'adverb', ex:'Έξω κάνει κρύο. — На улице холодно.'},
+  {el:'κοντά', ru:'рядом / близко', cat:'Предлог', type:'adverb', ex:'Μένω κοντά στο κέντρο. — Живу близко от центра.'},
+  {el:'μακριά', ru:'далеко', cat:'Предлог', type:'adverb', ex:'Είναι μακριά από εδώ; — Это далеко отсюда?'},
+  {el:'ανάμεσα', ru:'между', cat:'Предлог', type:'adverb', ex:'Ανάμεσα στο σπίτι και τη θάλασσα. — Между домом и морем.'},
+  {el:'γύρω', ru:'вокруг / около', cat:'Предлог', type:'adverb', ex:'Γύρω στις 8 το βράδυ. — Около 8 вечера.'},
+  {el:'απέναντι', ru:'напротив', cat:'Предлог', type:'adverb', ex:'Το καφέ είναι απέναντι. — Кафе напротив.'},
+  {el:'κατά', ru:'около / по / против', cat:'Предлог', type:'particle', ex:'Κατά τις 3 το μεσημέρι. — Около трёх дня.'},
+  {el:'εκτός', ru:'кроме / за исключением', cat:'Предлог', type:'particle', ex:'Όλοι ήρθαν εκτός από τον Γιώργο. — Все пришли кроме Йоргоса.'},
+  {el:'λόγω', ru:'из-за / по причине', cat:'Предлог', type:'particle', ex:'Λόγω βροχής ακυρώθηκε. — Из-за дождя отменили.'},
+
+  // ===== ЦВЕТА =====
+  {el:'κόκκινος', ru:'красный', cat:'Цвета', type:'adj', ex:'Κόκκινο τριαντάφυλλο. — Красная роза.'},
+  {el:'μπλε', ru:'синий / голубой', cat:'Цвета', type:'adj', ex:'Μπλε θάλασσα. — Синее море.'},
+  {el:'πράσινος', ru:'зелёный', cat:'Цвета', type:'adj', ex:'Πράσινα δέντρα. — Зелёные деревья.'},
+  {el:'κίτρινος', ru:'жёлтый', cat:'Цвета', type:'adj', ex:'Κίτρινος ήλιος. — Жёлтое солнце.'},
+  {el:'άσπρος', ru:'белый', cat:'Цвета', type:'adj', ex:'Άσπρα σύννεφα. — Белые облака.'},
+  {el:'μαύρος', ru:'чёрный', cat:'Цвета', type:'adj', ex:'Μαύρη νύχτα. — Чёрная ночь.'},
+  {el:'γκρι', ru:'серый', cat:'Цвета', type:'adj', ex:'Γκρι ουρανός. — Серое небо.'},
+  {el:'πορτοκαλί', ru:'оранжевый', cat:'Цвета', type:'adj', ex:'Πορτοκαλί φόρεμα. — Оранжевое платье.'},
+  {el:'ροζ', ru:'розовый', cat:'Цвета', type:'adj', ex:'Ροζ λουλούδι. — Розовый цветок.'},
+  {el:'μοβ', ru:'фиолетовый', cat:'Цвета', type:'adj', ex:'Μοβ χρώμα. — Фиолетовый цвет.'},
+  {el:'καφέ', ru:'коричневый', cat:'Цвета', type:'adj', ex:'Καφέ παπούτσια. — Коричневые туфли.'},
+  {el:'χρυσός', ru:'золотой', cat:'Цвета', type:'adj', ex:'Χρυσό δαχτυλίδι. — Золотое кольцо.'},
+
+  // ===== ВРЕМЯ =====
+  {el:'σήμερα', ru:'сегодня', cat:'Время', type:'adverb', ex:'Σήμερα είναι Δευτέρα. — Сегодня понедельник.'},
+  {el:'χθες', ru:'вчера', cat:'Время', type:'adverb', ex:'Χθες ήταν Κυριακή. — Вчера было воскресенье.'},
+  {el:'αύριο', ru:'завтра', cat:'Время', type:'adverb', ex:'Αύριο πάμε παραλία. — Завтра на пляж.'},
+  {el:'πρωί', art:'το', ru:'утро', cat:'Время', type:'noun', ex:'Καλημέρα το πρωί. — Доброе утро.'},
+  {el:'μεσημέρι', art:'το', ru:'полдень / обед', cat:'Время', type:'noun', ex:'Τρώω στο μεσημέρι. — Обедаю в полдень.'},
+  {el:'απόγευμα', art:'το', ru:'послеполудень / вечер', cat:'Время', type:'noun', ex:'Τα απογεύματα περπατώ. — По вечерам хожу пешком.'},
+  {el:'βράδυ', art:'το', ru:'вечер / ночь', cat:'Время', type:'noun', ex:'Καληνύχτα το βράδυ. — Спокойной ночи вечером.'},
+  {el:'νύχτα', art:'η', ru:'ночь', cat:'Время', type:'noun', ex:'Τη νύχτα κοιμάμαι. — Ночью сплю.'},
+  {el:'ώρα', art:'η', ru:'час / время', cat:'Время', type:'noun', ex:'Τι ώρα είναι; — Который час?'},
+  {el:'λεπτό', art:'το', ru:'минута', cat:'Время', type:'noun', ex:'Περίμενε ένα λεπτό. — Подожди минуту.'},
+  {el:'δευτερόλεπτο', art:'το', ru:'секунда', cat:'Время', type:'noun', ex:'Σε ένα δευτερόλεπτο. — За секунду.'},
+  {el:'χρόνος', art:'ο', ru:'год / время', cat:'Время', type:'noun', ex:'Φέτος ο χρόνος πέρασε γρήγορα. — В этом году время прошло быстро.'},
+  {el:'εποχή', art:'η', ru:'сезон / время года', cat:'Время', type:'noun', ex:'Ποια εποχή σου αρέσει; — Какое время года тебе нравится?'},
+  {el:'άνοιξη', art:'η', ru:'весна', cat:'Время', type:'noun', ex:'Η άνοιξη είναι ωραία. — Весна красивая.'},
+  {el:'καλοκαίρι', art:'το', ru:'лето', cat:'Время', type:'noun', ex:'Το καλοκαίρι πάμε θάλασσα. — Летом идём на море.'},
+  {el:'φθινόπωρο', art:'το', ru:'осень', cat:'Время', type:'noun', ex:'Το φθινόπωρο πέφτουν τα φύλλα. — Осенью падают листья.'},
+  {el:'χειμώνας', art:'ο', ru:'зима', cat:'Время', type:'noun', ex:'Τον χειμώνα κάνει κρύο. — Зимой холодно.'},
+  {el:'προχθές', ru:'позавчера', cat:'Время', type:'adverb', ex:'Το είδα προχθές. — Видел это позавчера.'},
+  {el:'μεθαύριο', ru:'послезавтра', cat:'Время', type:'adverb', ex:'Θα έρθω μεθαύριο. — Приду послезавтра.'},
+  {el:'φέτος', ru:'в этом году', cat:'Время', type:'adverb', ex:'Φέτος πάμε Κρήτη. — В этом году едем на Крит.'},
+  {el:'πέρσι', ru:'в прошлом году', cat:'Время', type:'adverb', ex:'Πέρσι ήταν καλύτερα. — В прошлом году было лучше.'},
+
+  // ===== ДНИ НЕДЕЛИ =====
+  {el:'Δευτέρα', art:'η', ru:'понедельник', cat:'Дни недели', type:'noun', ex:'Τη Δευτέρα έχω μάθημα. — В понедельник урок.'},
+  {el:'Τρίτη', art:'η', ru:'вторник', cat:'Дни недели', type:'noun', ex:'Την Τρίτη πάω στον γιατρό. — Во вторник к врачу.'},
+  {el:'Τετάρτη', art:'η', ru:'среда', cat:'Дни недели', type:'noun', ex:'Την Τετάρτη έχουμε σύσκεψη. — В среду совещание.'},
+  {el:'Πέμπτη', art:'η', ru:'четверг', cat:'Дни недели', type:'noun', ex:'Την Πέμπτη φεύγω. — В четверг уезжаю.'},
+  {el:'Παρασκευή', art:'η', ru:'пятница', cat:'Дни недели', type:'noun', ex:'Παρασκευή βράδυ — выход в свет.'},
+  {el:'Σάββατο', art:'το', ru:'суббота', cat:'Дни недели', type:'noun', ex:'Το Σάββατο πάμε πάρτι. — В субботу вечеринка.'},
+  {el:'Κυριακή', art:'η', ru:'воскресенье', cat:'Дни недели', type:'noun', ex:'Την Κυριακή ξεκουράζομαι. — В воскресенье отдыхаю.'},
+  {el:'εβδομάδα', art:'η', ru:'неделя', cat:'Дни недели', type:'noun', ex:'Αυτή την εβδομάδα. — На этой неделе.'},
+
+  // ===== МЕСЯЦЫ =====
+  {el:'Ιανουάριος', art:'ο', ru:'январь', cat:'Месяцы', type:'noun', ex:'Τον Ιανουάριο κάνει κρύο. — В январе холодно.'},
+  {el:'Φεβρουάριος', art:'ο', ru:'февраль', cat:'Месяцы', type:'noun', ex:'Τον Φεβρουάριο έχει Αποκριές. — В феврале карнавал.'},
+  {el:'Μάρτιος', art:'ο', ru:'март', cat:'Месяцы', type:'noun', ex:'Τον Μάρτιο αρχίζει η άνοιξη. — В марте начинается весна.'},
+  {el:'Απρίλιος', art:'ο', ru:'апрель', cat:'Месяцы', type:'noun', ex:'Τον Απρίλιο βρέχει. — В апреле идут дожди.'},
+  {el:'Μάιος', art:'ο', ru:'май', cat:'Месяцы', type:'noun', ex:'Τον Μάιο ανθίζουν τα λουλούδια. — В мае цветут цветы.'},
+  {el:'Ιούνιος', art:'ο', ru:'июнь', cat:'Месяцы', type:'noun', ex:'Τον Ιούνιο τελειώνει το σχολείο. — В июне кончается школа.'},
+  {el:'Ιούλιος', art:'ο', ru:'июль', cat:'Месяцы', type:'noun', ex:'Τον Ιούλιο πάμε διακοπές. — В июле едем в отпуск.'},
+  {el:'Αύγουστος', art:'ο', ru:'август', cat:'Месяцы', type:'noun', ex:'Τον Αύγουστο κάνει ζέστη. — В августе жарко.'},
+  {el:'Σεπτέμβριος', art:'ο', ru:'сентябрь', cat:'Месяцы', type:'noun', ex:'Τον Σεπτέμβριο αρχίζει το σχολείο. — В сентябре начинается школа.'},
+  {el:'Οκτώβριος', art:'ο', ru:'октябрь', cat:'Месяцы', type:'noun', ex:'Τον Οκτώβριο πέφτουν τα φύλλα. — В октябре падают листья.'},
+  {el:'Νοέμβριος', art:'ο', ru:'ноябрь', cat:'Месяцы', type:'noun', ex:'Τον Νοέμβριο βρέχει πολύ. — В ноябре много дождей.'},
+  {el:'Δεκέμβριος', art:'ο', ru:'декабрь', cat:'Месяцы', type:'noun', ex:'Τον Δεκέμβριο γιορτάζουμε Χριστούγεννα. — В декабре празднуем Рождество.'},
+  {el:'μήνας', art:'ο', ru:'месяц', cat:'Месяцы', type:'noun', ex:'Αυτόν τον μήνα. — В этом месяце.'},
+
+  {el:'αρκούδα', art:'η', ru:'медведь', cat:'Дикие животные', type:'noun', ex:'Η αρκούδα είναι επικίνδυνη.'},
+  {el:'λύκος', art:'ο', ru:'волк', cat:'Дикие животные', type:'noun', ex:'Ο λύκος ουρλιάζει τη νύχτα.'},
+  {el:'αλεπού', art:'η', ru:'лиса', cat:'Дикие животные', type:'noun', ex:'Η αλεπού είναι έξυπνη.'},
+  {el:'σκαντζόχοιρος', art:'ο', ru:'ёж', cat:'Дикие животные', type:'noun', ex:'Ο σκαντζόχοιρος κουλουριάζεται.'},
+  {el:'ελάφι', art:'το', ru:'олень', cat:'Дикие животные', type:'noun', ex:'Το ελάφι τρέχει γρήγορα.'},
+  // ===== ДОМАШНИЕ ЖИВОТНЫЕ =====
+  {el:'σκύλος', art:'ο', ru:'собака', cat:'Домашние животные', type:'noun', ex:'Ο σκύλος μου είναι φιλικός. — Моя собака дружелюбная.'},
+  {el:'γάτα', art:'η', ru:'кошка', cat:'Домашние животные', type:'noun', ex:'Η γάτα κοιμάται. — Кошка спит.'},
+  {el:'ψάρι', art:'το', ru:'рыба', cat:'Домашние животные', type:'noun', ex:'Τρώω ψάρι. — Ем рыбу.'},
+  {el:'άλογο', art:'το', ru:'лошадь', cat:'Домашние животные', type:'noun', ex:'Καβαλώ άλογο. — Еду верхом.'},
+  {el:'αγελάδα', art:'η', ru:'корова', cat:'Домашние животные', type:'noun', ex:'Η αγελάδα δίνει γάλα. — Корова даёт молоко.'},
+  {el:'πρόβατο', art:'το', ru:'овца', cat:'Домашние животные', type:'noun', ex:'Πολλά πρόβατα στο χωράφι. — Много овец в поле.'},
+  {el:'κοτόπουλο', art:'το', ru:'курица / цыплёнок', cat:'Домашние животные', type:'noun', ex:'Τρώω κοτόπουλο. — Ем курицу.'},
+  {el:'κουνέλι', art:'το', ru:'кролик', cat:'Домашние животные', type:'noun', ex:'Έχω κουνέλι. — У меня есть кролик.'},
+
+  // ===== ДИКИЕ ЖИВОТНЫЕ =====
+  {el:'πουλί', art:'το', ru:'птица', cat:'Дикие животные', type:'noun', ex:'Το πουλί τραγουδά. — Птица поёт.'},
+  {el:'ελέφαντας', art:'ο', ru:'слон', cat:'Дикие животные', type:'noun', ex:'Ο ελέφαντας είναι μεγάλος. — Слон большой.'},
+  {el:'λιοντάρι', art:'το', ru:'лев', cat:'Дикие животные', type:'noun', ex:'Το λιοντάρι κοιμάται. — Лев спит.'},
+
+  // ===== ОВОЩИ =====
+  {el:'ντομάτα', art:'η', ru:'помидор', cat:'Овощи', type:'noun', ex:'Φρέσκια ντομάτα. — Свежий помидор.'},
+  {el:'αγγούρι', art:'το', ru:'огурец', cat:'Овощи', type:'noun', ex:'Σαλάτα με αγγούρι. — Салат с огурцом.'},
+  {el:'πατάτα', art:'η', ru:'картофель', cat:'Овощи', type:'noun', ex:'Τηγανητές πατάτες. — Жареная картошка.'},
+  {el:'κρεμμύδι', art:'το', ru:'лук', cat:'Овощи', type:'noun', ex:'Κόβω κρεμμύδι. — Режу лук.'},
+  {el:'σκόρδο', art:'το', ru:'чеснок', cat:'Овощи', type:'noun', ex:'Σκόρδο στη σάλτσα. — Чеснок в соусе.'},
+  {el:'κολοκύθι', art:'το', ru:'кабачок', cat:'Овощи', type:'noun', ex:'Κολοκύθι με φέτα. — Кабачок с фетой.'},
+  {el:'μελιτζάνα', art:'η', ru:'баклажан', cat:'Овощи', type:'noun', ex:'Μελιτζάνα στο φούρνο. — Баклажан в духовке.'},
+
+  // ===== ФРУКТЫ =====
+  {el:'μήλο', art:'το', ru:'яблоко', cat:'Фрукты', type:'noun', ex:'Τρώω ένα μήλο. — Ем яблоко.'},
+  {el:'πορτοκάλι', art:'το', ru:'апельсин', cat:'Фрукты', type:'noun', ex:'Πίνω χυμό πορτοκάλι. — Пью апельсиновый сок.'},
+  {el:'μπανάνα', art:'η', ru:'банан', cat:'Фрукты', type:'noun', ex:'Φάε μια μπανάνα. — Съешь банан.'},
+  {el:'σταφύλι', art:'το', ru:'виноград', cat:'Фрукты', type:'noun', ex:'Ελληνικά σταφύλια. — Греческий виноград.'},
+  {el:'φράουλα', art:'η', ru:'клубника', cat:'Фрукты', type:'noun', ex:'Φράουλες με κρέμα. — Клубника со сливками.'},
+  {el:'λεμόνι', art:'το', ru:'лимон', cat:'Фрукты', type:'noun', ex:'Βάζω λεμόνι στο ψάρι. — Кладу лимон на рыбу.'},
+  {el:'καρπούζι', art:'το', ru:'арбуз', cat:'Фрукты', type:'noun', ex:'Καλοκαιρινό καρπούζι. — Летний арбуз.'},
+  {el:'ροδάκινο', art:'το', ru:'персик', cat:'Фрукты', type:'noun', ex:'Γλυκό ροδάκινο. — Сладкий персик.'},
+
+  // ===== РЕСТОРАН =====
+  {el:'εστιατόριο', art:'το', ru:'ресторан', cat:'Ресторан', type:'noun', ex:'Πάμε σε εστιατόριο; — Пойдём в ресторан?'},
+  {el:'μενού', art:'το', ru:'меню', cat:'Ресторан', type:'noun', ex:'Μπορώ να δω το μενού; — Можно посмотреть меню?'},
+  {el:'τραπέζι', art:'το', ru:'стол', cat:'Ресторан', type:'noun', ex:'Έχετε ελεύθερο τραπέζι; — Есть свободный столик?'},
+  {el:'σερβιτόρος', art:'ο', ru:'официант', cat:'Ресторан', type:'noun', ex:'Σερβιτόρε, παρακαλώ! — Официант, пожалуйста!'},
+  {el:'λογαριασμός', art:'ο', ru:'счёт', cat:'Ресторан', type:'noun', ex:'Τον λογαριασμό, παρακαλώ. — Счёт, пожалуйста.'},
+  {el:'πιάτο', art:'το', ru:'тарелка / блюдо', cat:'Ресторан', type:'noun', ex:'Ένα πιάτο σαλάτα. — Тарелку салата.'},
+  {el:'ποτήρι', art:'το', ru:'стакан / бокал', cat:'Ресторан', type:'noun', ex:'Ένα ποτήρι νερό. — Стакан воды.'},
+  {el:'ορεκτικό', art:'το', ru:'закуска', cat:'Ресторан', type:'noun', ex:'Τι ορεκτικά έχετε; — Какие закуски?'},
+  {el:'κυρίως πιάτο', art:'το', ru:'основное блюдο', cat:'Ресторан', type:'noun', ex:'Το κυρίως πιάτο είναι ψάρι. — Основное блюдо — рыба.'},
+  {el:'επιδόρπιο', art:'το', ru:'десерт', cat:'Ресторан', type:'noun', ex:'Θέλω επιδόρπιο. — Хочу десерт.'},
+  {el:'κρασί', art:'το', ru:'вино', cat:'Ресторан', type:'noun', ex:'Ένα ποτήρι κρασί. — Бокал вина.'},
+  {el:'μπύρα', art:'η', ru:'пиво', cat:'Ресторан', type:'noun', ex:'Μια κρύα μπύρα. — Холодное пиво.'},
+  {el:'νερό', art:'το', ru:'вода', cat:'Ресторан', type:'noun', ex:'Ένα μπουκάλι νερό. — Бутылка воды.'},
+  {el:'καφές', art:'ο', ru:'кофе', cat:'Ресторан', type:'noun', ex:'Έναν ελληνικό καφέ. — Греческий кофе.'},
+  {el:'αλλεργία', art:'η', ru:'аллергия', cat:'Ресторан', type:'noun', ex:'Έχω αλλεργία στο γάλα. — Аллергия на молоко.'},
+  {el:'χορτοφάγος', art:'ο', ru:'вегетарианец', cat:'Ресторан', type:'noun', ex:'Είμαι χορτοφάγος. — Я вегетарианец.'},
+
+  // ===== БОЛЬНИЦА =====
+  {el:'νοσοκομείο', art:'το', ru:'больница', cat:'Больница', type:'noun', ex:'Πάω στο νοσοκομείο. — Иду в больницу.'},
+  {el:'γιατρός', art:'ο/η', ru:'врач', cat:'Больница', type:'noun', ex:'Ο γιατρός εξετάζει τον ασθενή. — Врач осматривает пациента.'},
+  {el:'νοσοκόμα', art:'η', ru:'медсестра', cat:'Больница', type:'noun', ex:'Η νοσοκόμα είναι καλή. — Медсестра добрая.'},
+  {el:'ασθενής', art:'ο/η', ru:'пациент / больной', cat:'Больница', type:'noun', ex:'Ο ασθενής χρειάζεται βοήθεια. — Пациент нуждается в помощи.'},
+  {el:'φάρμακο', art:'το', ru:'лекарство', cat:'Больница', type:'noun', ex:'Πάρε το φάρμακο. — Прими лекарство.'},
+  {el:'φαρμακείο', art:'το', ru:'аптека', cat:'Больница', type:'noun', ex:'Πού είναι το φαρμακείο; — Где аптека?'},
+  {el:'πόνος', art:'ο', ru:'боль', cat:'Больница', type:'noun', ex:'Έχω πόνο στο στομάχι. — Боль в животе.'},
+  {el:'πυρετός', art:'ο', ru:'температура / жар', cat:'Больница', type:'noun', ex:'Έχω πυρετό. — У меня температура.'},
+  {el:'συνταγή', art:'η', ru:'рецепт', cat:'Больница', type:'noun', ex:'Χρειάζομαι συνταγή. — Мне нужен рецепт.'},
+  {el:'ασθενοφόρο', art:'το', ru:'скорая помощь', cat:'Больница', type:'noun', ex:'Καλέστε ασθενοφόρο! — Вызовите скорую!'},
+  {el:'επείγον', ru:'срочный / экстренный', cat:'Больница', type:'adj', ex:'Είναι επείγον. — Это срочно.'},
+  {el:'βοήθεια', art:'η', ru:'помощь', cat:'Больница', type:'noun', ex:'Βοήθεια! — Помогите!'},
+
+  // ===== ШКОЛА =====
+  {el:'σχολείο', art:'το', ru:'школа', cat:'Школа', type:'noun', ex:'Πάω στο σχολείο. — Иду в школу.'},
+  {el:'μαθητής', art:'ο', ru:'ученик', cat:'Школа', type:'noun', ex:'Ο μαθητής διαβάζει. — Ученик читает.'},
+  {el:'δάσκαλος', art:'ο', ru:'учитель', cat:'Школа', type:'noun', ex:'Ο δάσκαλος εξηγεί. — Учитель объясняет.'},
+  {el:'τάξη', art:'η', ru:'класс / урок', cat:'Школа', type:'noun', ex:'Πηγαίνω στην τάξη. — Иду в класс.'},
+  {el:'μάθημα', art:'το', ru:'урок / предмет', cat:'Школа', type:'noun', ex:'Έχω μάθημα μαθηματικών. — Урок математики.'},
+  {el:'βιβλίο', art:'το', ru:'книга', cat:'Школа', type:'noun', ex:'Ανοίξτε το βιβλίο. — Откройте книгу.'},
+  {el:'τετράδιο', art:'το', ru:'тетрадь', cat:'Школа', type:'noun', ex:'Γράφω στο τετράδιο. — Пишу в тетради.'},
+  {el:'μολύβι', art:'το', ru:'карандаш', cat:'Школа', type:'noun', ex:'Δάνεισέ μου ένα μολύβι. — Одолжи карандаш.'},
+  {el:'πίνακας', art:'ο', ru:'доска', cat:'Школа', type:'noun', ex:'Γράφω στον πίνακα. — Пишу на доске.'},
+  {el:'εξέταση', art:'η', ru:'экзамен', cat:'Школа', type:'noun', ex:'Έχω εξέταση αύριο. — У меня экзамен завтра.'},
+  {el:'βαθμός', art:'ο', ru:'оценка / балл', cat:'Школа', type:'noun', ex:'Πήρα καλό βαθμό. — Получил хорошую оценку.'},
+  {el:'διάλειμμα', art:'το', ru:'перемена / перерыв', cat:'Школа', type:'noun', ex:'Παίζουμε στο διάλειμμα. — Играем на перемене.'},
+
+  // ===== ПАРК =====
+  {el:'πάρκο', art:'το', ru:'парк', cat:'Парк', type:'noun', ex:'Πάω στο πάρκο. — Иду в парк.'},
+  {el:'δέντρο', art:'το', ru:'дерево', cat:'Парк', type:'noun', ex:'Κάτω από το δέντρο. — Под деревом.'},
+  {el:'λουλούδι', art:'το', ru:'цветок', cat:'Парк', type:'noun', ex:'Αγοράζω λουλούδια. — Покупаю цветы.'},
+  {el:'χορτάρι', art:'το', ru:'трава', cat:'Парк', type:'noun', ex:'Κάθομαι στο χορτάρι. — Сижу на траве.'},
+  {el:'παγκάκι', art:'το', ru:'скамейка', cat:'Парк', type:'noun', ex:'Κάθομαι στο παγκάκι. — Сижу на скамейке.'},
+  {el:'μονοπάτι', art:'το', ru:'тропинка', cat:'Парк', type:'noun', ex:'Περπατώ στο μονοπάτι. — Иду по тропинке.'},
+  {el:'λίμνη', art:'η', ru:'озеро', cat:'Парк', type:'noun', ex:'Ψαρεύω στη λίμνη. — Рыбачу на озере.'},
+  {el:'παιδική χαρά', art:'η', ru:'детская площадка', cat:'Парк', type:'noun', ex:'Τα παιδιά παίζουν. — Дети играют.'},
+  {el:'ποδήλατο', art:'το', ru:'велосипед', cat:'Парк', type:'noun', ex:'Κάνω ποδήλατο. — Езжу на велосипеде.'},
+
+  // ===== ПОЛИЦИЯ =====
+  {el:'αστυνομία', art:'η', ru:'полиция', cat:'Полиция', type:'noun', ex:'Καλέστε την αστυνομία. — Вызовите полицию.'},
+  {el:'αστυνομικός', art:'ο', ru:'полицейский', cat:'Полиция', type:'noun', ex:'Ο αστυνομικός βοηθά. — Полицейский помогает.'},
+  {el:'κλοπή', art:'η', ru:'кража', cat:'Полиция', type:'noun', ex:'Έγινε κλοπή. — Произошла кража.'},
+  {el:'χαμένος', ru:'потерявшийся / заблудился', cat:'Полиция', type:'adj', ex:'Είμαι χαμένος. — Я заблудился.'},
+  {el:'διαβατήριο', art:'το', ru:'паспорт', cat:'Полиция', type:'noun', ex:'Χάσα το διαβατήριό μου. — Потерял паспорт.'},
+  {el:'ατύχημα', art:'το', ru:'авария / несчастный случай', cat:'Полиция', type:'noun', ex:'Έγινε ατύχημα. — Произошла авария.'},
+  {el:'βοήθεια', art:'η', ru:'помощь', cat:'Полиция', type:'noun', ex:'Βοήθεια! — Помогите!'},
+  {el:'κίνδυνος', art:'ο', ru:'опасность', cat:'Полиция', type:'noun', ex:'Υπάρχει κίνδυνος. — Есть опасность.'},
+  {el:'έγγραφο', art:'το', ru:'документ', cat:'Полиция', type:'noun', ex:'Χάθηκαν τα έγγραφά μου. — Потерял документы.'},
+
+  // ===== ПОЧТА =====
+  {el:'ταχυδρομείο', art:'το', ru:'почта (учреждение)', cat:'Почта', type:'noun', ex:'Πού είναι το ταχυδρομείο; — Где почта?'},
+  {el:'γράμμα', art:'το', ru:'письмо', cat:'Почта', type:'noun', ex:'Στέλνω γράμμα. — Отправляю письмо.'},
+  {el:'δέμα', art:'το', ru:'посылка', cat:'Почта', type:'noun', ex:'Παραλαμβάνω ένα δέμα. — Получаю посылку.'},
+  {el:'γραμματόσημο', art:'το', ru:'марка (почтовая)', cat:'Почта', type:'noun', ex:'Χρειάζομαι γραμματόσημο. — Мне нужна марка.'},
+  {el:'φάκελος', art:'ο', ru:'конверт', cat:'Почта', type:'noun', ex:'Βάζω την επιστολή στον φάκελο. — Кладу письмо в конверт.'},
+  {el:'διεύθυνση', art:'η', ru:'адрес', cat:'Почта', type:'noun', ex:'Γράφω τη διεύθυνση. — Пишу адрес.'},
+  {el:'αποστολέας', art:'ο', ru:'отправитель', cat:'Почта', type:'noun', ex:'Ποιος είναι ο αποστολέας; — Кто отправитель?'},
+  {el:'παραλήπτης', art:'ο', ru:'получатель', cat:'Почта', type:'noun', ex:'Ο παραλήπτης λείπει. — Получатель отсутствует.'},
+
+  // ===== СПОРТ =====
+  {el:'ποδόσφαιρο', art:'το', ru:'футбол', cat:'Спорт', type:'noun', ex:'Παίζω ποδόσφαιρο. — Играю в футбол.'},
+  {el:'μπάσκετ', art:'το', ru:'баскетбол', cat:'Спорт', type:'noun', ex:'Βλέπω μπάσκετ. — Смотрю баскетбол.'},
+  {el:'κολύμπι', art:'το', ru:'плавание', cat:'Спорт', type:'noun', ex:'Κάνω κολύμπι. — Плаваю.'},
+  {el:'τένις', art:'το', ru:'теннис', cat:'Спорт', type:'noun', ex:'Παίζω τένις. — Играю в теннис.'},
+  {el:'γυμναστήριο', art:'το', ru:'спортзал', cat:'Спорт', type:'noun', ex:'Πάω στο γυμναστήριο. — Иду в спортзал.'},
+  {el:'προπόνηση', art:'η', ru:'тренировка', cat:'Спорт', type:'noun', ex:'Έχω προπόνηση σήμερα. — У меня тренировка.'},
+  {el:'αγώνας', art:'ο', ru:'матч / соревнование', cat:'Спорт', type:'noun', ex:'Βλέπω τον αγώνα. — Смотрю матч.'},
+  {el:'νικώ', ru:'побеждать', cat:'Спорт', type:'verb', ex:'Νικάμε! — Мы побеждаем!'},
+  {el:'χάνω', ru:'проигрывать', cat:'Спорт', type:'verb', ex:'Χάσαμε τον αγώνα. — Проиграли матч.'},
+
+  // ===== ХОББИ =====
+  {el:'χόμπι', art:'το', ru:'хобби', cat:'Хобби', type:'noun', ex:'Ποιο είναι το χόμπι σου; — Какое у тебя хобби?'},
+  {el:'μουσική', art:'η', ru:'музыка', cat:'Хобби', type:'noun', ex:'Ακούω μουσική. — Слушаю музыку.'},
+  {el:'ζωγραφική', art:'η', ru:'рисование / живопись', cat:'Хобби', type:'noun', ex:'Κάνω ζωγραφική. — Занимаюсь живописью.'},
+  {el:'μαγείρεμα', art:'το', ru:'готовка', cat:'Хобби', type:'noun', ex:'Το μαγείρεμα είναι χόμπι μου. — Готовка — моё хобби.'},
+  {el:'ταξίδι', art:'το', ru:'путешествие', cat:'Хобби', type:'noun', ex:'Αγαπώ τα ταξίδια. — Люблю путешествия.'},
+  {el:'ανάγνωση', art:'η', ru:'чтение', cat:'Хобби', type:'noun', ex:'Η ανάγνωση με ηρεμεί. — Чтение успокаивает.'},
+  {el:'χορός', art:'ο', ru:'танцы', cat:'Хобби', type:'noun', ex:'Μαθαίνω χορό. — Учусь танцевать.'},
+  {el:'σκάκι', art:'το', ru:'шахматы', cat:'Хобби', type:'noun', ex:'Παίζω σκάκι. — Играю в шахматы.'},
+  {el:'κηπουρική', art:'η', ru:'садоводство', cat:'Хобби', type:'noun', ex:'Κάνω κηπουρική. — Занимаюсь садоводством.'},
+
+  // ===== ПРОФЕССИИ =====
+  {el:'επάγγελμα', art:'το', ru:'профессия', cat:'Профессии', type:'noun', ex:'Ποιο είναι το επάγγελμά σου; — Какая профессия?'},
+  {el:'γιατρός', art:'ο/η', ru:'врач', cat:'Профессии', type:'noun', ex:'Είμαι γιατρός. — Я врач.'},
+  {el:'δάσκαλος', art:'ο', ru:'учитель', cat:'Профессии', type:'noun', ex:'Δουλεύω ως δάσκαλος. — Работаю учителем.'},
+  {el:'μηχανικός', art:'ο', ru:'инженер / механик', cat:'Профессии', type:'noun', ex:'Είμαι μηχανικός. — Я инженер.'},
+  {el:'δικηγόρος', art:'ο/η', ru:'адвокат', cat:'Профессии', type:'noun', ex:'Χρειάζομαι δικηγόρο. — Нужен адвокат.'},
+  {el:'ηθοποιός', art:'ο/η', ru:'актёр', cat:'Профессии', type:'noun', ex:'Είναι διάσημος ηθοποιός. — Известный актёр.'},
+  {el:'μάγειρας', art:'ο', ru:'повар', cat:'Профессии', type:'noun', ex:'Ο μάγειρας μαγειρεύει καλά. — Повар готовит хорошо.'},
+  {el:'οδηγός', art:'ο', ru:'водитель', cat:'Профессии', type:'noun', ex:'Ο οδηγός οδηγεί προσεκτικά. — Едет осторожно.'},
+  {el:'αρχιτέκτονας', art:'ο/η', ru:'архитектор', cat:'Профессии', type:'noun', ex:'Σχεδιάζει ο αρχιτέκτονας. — Архитектор проектирует.'},
+  {el:'νοσοκόμα', art:'η', ru:'медсестра', cat:'Профессии', type:'noun', ex:'Η νοσοκόμα φροντίζει τους ασθενείς.'},
+  {el:'δημοσιογράφος', art:'ο/η', ru:'журналист', cat:'Профессии', type:'noun', ex:'Ο δημοσιογράφος γράφει άρθρα. — Журналист пишет статьи.'},
+
+  // ===== СЕМЬЯ =====
+  {el:'οικογένεια', art:'η', ru:'семья', cat:'Семья', type:'noun', ex:'Αγαπώ την οικογένειά μου. — Люблю свою семью.'},
+  {el:'μαμά', art:'η', ru:'мама', cat:'Семья', type:'noun', ex:'Η μαμά μαγειρεύει. — Мама готовит.'},
+  {el:'μπαμπάς', art:'ο', ru:'папа', cat:'Семья', type:'noun', ex:'Ο μπαμπάς δουλεύει. — Папа работает.'},
+  {el:'αδερφός', art:'ο', ru:'брат', cat:'Семья', type:'noun', ex:'Ο αδερφός μου είναι νέος. — Брат молодой.'},
+  {el:'αδερφή', art:'η', ru:'сестра', cat:'Семья', type:'noun', ex:'Η αδερφή μου μένει στη Θεσσαλονίκη. — Сестра в Салониках.'},
+  {el:'παππούς', art:'ο', ru:'дедушка', cat:'Семья', type:'noun', ex:'Ο παππούς αγαπά τα εγγόνια. — Дедушка любит внуков.'},
+  {el:'γιαγιά', art:'η', ru:'бабушка', cat:'Семья', type:'noun', ex:'Η γιαγιά φτιάχνει γλυκά. — Бабушка делает сладости.'},
+  {el:'παιδί', art:'το', ru:'ребёнок', cat:'Семья', type:'noun', ex:'Το παιδί παίζει. — Ребёнок играет.'},
+  {el:'γιος', art:'ο', ru:'сын', cat:'Семья', type:'noun', ex:'Ο γιος μου σπουδάζει. — Сын учится.'},
+  {el:'κόρη', art:'η', ru:'дочь', cat:'Семья', type:'noun', ex:'Η κόρη μου είναι 10 χρονών. — Дочери 10 лет.'},
+  {el:'σύζυγος', art:'ο/η', ru:'супруг(а)', cat:'Семья', type:'noun', ex:'Ο σύζυγός μου δουλεύει εξωτερικό. — Супруг работает за границей.'},
+  {el:'θείος', art:'ο', ru:'дядя', cat:'Семья', type:'noun', ex:'Ο θείος μου μένει στην Αμερική. — Дядя живёт в Америке.'},
+  {el:'θεία', art:'η', ru:'тётя', cat:'Семья', type:'noun', ex:'Η θεία μου είναι γιατρός. — Тётя — врач.'},
+  {el:'ξάδερφος', art:'ο', ru:'двоюродный брат', cat:'Семья', type:'noun', ex:'Ο ξάδερφός μου έρχεται. — Двоюродный брат приезжает.'},
+
+  // ===== ДОМ =====
+  {el:'σπίτι', art:'το', ru:'дом / жильё', cat:'Дом', type:'noun', ex:'Πάω σπίτι. — Иду домой.'},
+  {el:'δωμάτιο', art:'το', ru:'комната', cat:'Дом', type:'noun', ex:'Το δωμάτιό μου είναι μικρό. — Моя комната маленькая.'},
+  {el:'κουζίνα', art:'η', ru:'кухня', cat:'Дом', type:'noun', ex:'Μαγειρεύω στην κουζίνα. — Готовлю на кухне.'},
+  {el:'σαλόνι', art:'το', ru:'гостиная', cat:'Дом', type:'noun', ex:'Βλέπουμε τηλεόραση στο σαλόνι. — Смотрим телевизор в гостиной.'},
+  {el:'υπνοδωμάτιο', art:'το', ru:'спальня', cat:'Дом', type:'noun', ex:'Κοιμάμαι στο υπνοδωμάτιο. — Сплю в спальне.'},
+  {el:'μπάνιο', art:'το', ru:'ванная', cat:'Дом', type:'noun', ex:'Το μπάνιο είναι ελεύθερο; — Ванная свободна?'},
+  {el:'πόρτα', art:'η', ru:'дверь', cat:'Дом', type:'noun', ex:'Κλείσε την πόρτα. — Закрой дверь.'},
+  {el:'παράθυρο', art:'το', ru:'окно', cat:'Дом', type:'noun', ex:'Άνοιξε το παράθυρο. — Открой окно.'},
+  {el:'ενοίκιο', art:'το', ru:'аренда / квартплата', cat:'Дом', type:'noun', ex:'Πληρώνω ενοίκιο. — Плачу за аренду.'},
+  {el:'έπιπλα', art:'τα', ru:'мебель', cat:'Дом', type:'noun', ex:'Αγοράζω έπιπλα. — Покупаю мебель.'},
+  {el:'κρεβάτι', art:'το', ru:'кровать', cat:'Дом', type:'noun', ex:'Στρώνω το κρεβάτι. — Застилаю кровать.'},
+  {el:'καρέκλα', art:'η', ru:'стул', cat:'Дом', type:'noun', ex:'Κάθισε στην καρέκλα. — Сядь на стул.'},
+  {el:'τηλεόραση', art:'η', ru:'телевизор', cat:'Дом', type:'noun', ex:'Βλέπω τηλεόραση. — Смотрю телевизор.'},
+  {el:'γειτονιά', art:'η', ru:'район / соседство', cat:'Дом', type:'noun', ex:'Ζω σε ήσυχη γειτονιά. — Живу в тихом районе.'},
+
+  // ===== ПОГОДА =====
+  {el:'καιρός', art:'ο', ru:'погода', cat:'Погода', type:'noun', ex:'Τι καιρό κάνει; — Какая погода?'},
+  {el:'ήλιος', art:'ο', ru:'солнце', cat:'Погода', type:'noun', ex:'Βγήκε ο ήλιος. — Вышло солнце.'},
+  {el:'βροχή', art:'η', ru:'дождь', cat:'Погода', type:'noun', ex:'Πέφτει βροχή. — Идёт дождь.'},
+  {el:'χιόνι', art:'το', ru:'снег', cat:'Погода', type:'noun', ex:'Χιονίζει. — Идёт снег.'},
+  {el:'αέρας', art:'ο', ru:'ветер', cat:'Погода', type:'noun', ex:'Φυσάει αέρας. — Дует ветер.'},
+  {el:'σύννεφο', art:'το', ru:'облако / туча', cat:'Погода', type:'noun', ex:'Πολλά σύννεφα σήμερα. — Сегодня много туч.'},
+  {el:'καταιγίδα', art:'η', ru:'гроза / буря', cat:'Погода', type:'noun', ex:'Έρχεται καταιγίδα. — Надвигается гроза.'},
+  {el:'θερμοκρασία', art:'η', ru:'температура воздуха', cat:'Погода', type:'noun', ex:'Η θερμοκρασία είναι 30 βαθμοί. — 30 градусов.'},
+  {el:'ζέστη', art:'η', ru:'жара / тепло', cat:'Погода', type:'noun', ex:'Κάνει πολλή ζέστη. — Очень жарко.'},
+  {el:'κρύο', art:'το', ru:'холод', cat:'Погода', type:'noun', ex:'Κάνει κρύο σήμερα. — Сегодня холодно.'},
+  {el:'ουράνιο τόξο', art:'το', ru:'радуга', cat:'Погода', type:'noun', ex:'Βλέπω ουράνιο τόξο. — Вижу радугу.'},
+
+  // ===== МЕСТНОСТЬ =====
+  {el:'θάλασσα', art:'η', ru:'море', cat:'Местность', type:'noun', ex:'Πάμε στη θάλασσα. — Идём к морю.'},
+  {el:'βουνό', art:'το', ru:'гора', cat:'Местность', type:'noun', ex:'Ανεβαίνω στο βουνό. — Поднимаюсь на гору.'},
+  {el:'παραλία', art:'η', ru:'пляж / побережье', cat:'Местность', type:'noun', ex:'Πάμε παραλία. — Идём на пляж.'},
+  {el:'ποτάμι', art:'το', ru:'река', cat:'Местность', type:'noun', ex:'Κολυμπώ στο ποτάμι. — Купаюсь в реке.'},
+  {el:'δάσος', art:'το', ru:'лес', cat:'Местность', type:'noun', ex:'Περπατώ στο δάσος. — Гуляю в лесу.'},
+  {el:'νησί', art:'το', ru:'остров', cat:'Местность', type:'noun', ex:'Πάω σε νησί. — Еду на остров.'},
+  {el:'χωριό', art:'το', ru:'деревня', cat:'Местность', type:'noun', ex:'Μένω σε χωριό. — Живу в деревне.'},
+  {el:'πόλη', art:'η', ru:'город', cat:'Местность', type:'noun', ex:'Μένω στην πόλη. — Живу в городе.'},
+  {el:'λόφος', art:'ο', ru:'холм', cat:'Местность', type:'noun', ex:'Από τον λόφο βλέπεις τη θάλασσα. — С холма видно море.'},
+  {el:'πεδιάδα', art:'η', ru:'равнина', cat:'Местность', type:'noun', ex:'Η πεδιάδα είναι επίπεδη. — Равнина плоская.'},
+  {el:'λιμάνι', art:'το', ru:'порт / гавань', cat:'Местность', type:'noun', ex:'Το πλοίο φτάνει στο λιμάνι. — Корабль прибывает в порт.'},
+  {el:'έρημος', art:'η', ru:'пустыня', cat:'Местность', type:'noun', ex:'Η έρημος είναι ξηρή. — Пустыня сухая.'},
+  {el:'λίμνη', art:'η', ru:'озеро', cat:'Местность', type:'noun', ex:'Η λίμνη είναι γαλάζια. — Озеро голубое.'},
+  {el:'ακρογιαλιά', art:'η', ru:'берег моря', cat:'Местность', type:'noun', ex:'Περπατώ στην ακρογιαλιά. — Гуляю по берегу.'},
+
+  // ===== ОБЩЕНИЕ =====
+  {el:'γεια σου', ru:'привет / пока (неформ.)', cat:'Общение', type:'phrase', ex:'Γεια σου! Τι κάνεις; — Привет! Как дела?'},
+  {el:'καλημέρα', ru:'доброе утро', cat:'Общение', type:'phrase', ex:'Καλημέρα! Πώς είσαι; — Доброе утро! Как ты?'},
+  {el:'καλησπέρα', ru:'добрый вечер', cat:'Общение', type:'phrase', ex:'Καλησπέρα σας. — Добрый вечер.'},
+  {el:'καληνύχτα', ru:'спокойной ночи', cat:'Общение', type:'phrase', ex:'Καληνύχτα, γλυκά όνειρα. — Спокойной ночи, сладких снов.'},
+  {el:'αντίο', ru:'до свидания', cat:'Общение', type:'phrase', ex:'Αντίο! Τα λέμε αύριο. — До свидания! Увидимся завтра.'},
+  {el:'παρακαλώ', ru:'пожалуйста / не за что', cat:'Общение', type:'particle', ex:'Παρακαλώ, ένα νερό. — Пожалуйста, воды.'},
+  {el:'ευχαριστώ', ru:'спасибо', cat:'Общение', type:'particle', ex:'Ευχαριστώ πολύ! — Большое спасибо!'},
+  {el:'συγγνώμη', ru:'извините / простите', cat:'Общение', type:'particle', ex:'Συγγνώμη, δεν ήξερα. — Извините, я не знал.'},
+  {el:'δεν πειράζει', ru:'ничего страшного / не беспокойся', cat:'Общение', type:'phrase', ex:'Δεν πειράζει, θα πάμε αύριο. — Ничего страшного, пойдём завтра.'},
+  {el:'με λένε...', ru:'меня зовут...', cat:'Общение', type:'phrase', ex:'Με λένε Αντώνη. — Меня зовут Антонис.'},
+  {el:'χαίρω πολύ', ru:'очень приятно (познакомиться)', cat:'Общение', type:'phrase', ex:'Χαίρω πολύ! — Очень приятно!'},
+  {el:'πώς είσαι;', ru:'как ты? (неформ.)', cat:'Общение', type:'phrase', ex:'Γεια! Πώς είσαι; — Привет! Как ты?'},
+  {el:'δεν καταλαβαίνω', ru:'не понимаю', cat:'Общение', type:'phrase', ex:'Δεν καταλαβαίνω, μπορείς να επαναλάβεις; — Не понимаю, можешь повторить?'},
+  {el:'μπορείς να επαναλάβεις;', ru:'можешь повторить?', cat:'Общение', type:'phrase', ex:'Συγγνώμη, μπορείς να επαναλάβεις; — Прости, можешь повторить?'},
+  {el:'εντάξει', ru:'окей / договорились', cat:'Общение', type:'particle', ex:'Εντάξει, τα λέμε αύριο. — Окей, увидимся завтра.'},
+
+  // ===== СЛЕНГ =====
+  {el:'ρε', ru:'эй / слушай (обращение)', cat:'Сленг', type:'particle', ex:'Ρε, τι κάνεις; — Эй, как дела?'},
+  {el:'τι γίνεται;', ru:'что происходит? / как дела? (сленг)', cat:'Сленг', type:'phrase', ex:'Τι γίνεται ρε; — Что за дела?'},
+  {el:'τέλεια', ru:'отлично / идеально', cat:'Сленг', type:'adverb', ex:'Τέλεια, πάμε! — Отлично, пошли!'},
+  {el:'άντε', ru:'давай / иди уже (подгоняет)', cat:'Сленг', type:'particle', ex:'Άντε, βιάσου! — Давай, поторопись!'},
+  {el:'έλα', ru:'иди / ладно / да ну / алло', cat:'Сленг', type:'phrase', ex:'Έλα, δεν το πιστεύω! — Ладно, не верю!'},
+  {el:'πάμε', ru:'пошли! / поехали!', cat:'Сленг', type:'phrase', ex:'Πάμε παραλία! — Пошли на пляж!'},
+  {el:'καλά καλά', ru:'ладно-ладно / всё-всё', cat:'Сленг', type:'phrase', ex:'Καλά καλά, ησύχασε. — Ладно-ладно, успокойся.'},
+  {el:'φοβερό', ru:'потрясающе / классно', cat:'Сленг', type:'adj', ex:'Φοβερό ήταν το πάρτι! — Вечеринка была потрясающей!'},
+  {el:'σιγά σιγά', ru:'потихоньку / не спеши', cat:'Сленг', type:'phrase', ex:'Σιγά σιγά θα τα καταφέρεις. — Потихоньку справишься.'},
+  {el:'όπα', ru:'опа! (удивление, ошибка, танец)', cat:'Сленг', type:'particle', ex:'Όπα! Τι έγινε εδώ; — Опа! Что тут произошло?'},
+  {el:'μπράβο', ru:'браво / молодец', cat:'Сленг', type:'particle', ex:'Μπράβο σου, το έκανες! — Молодец, ты это сделал!'},
+  {el:'γαμώτο', ru:'чёрт возьми / блин (груб.)', cat:'Сленг', type:'phrase', ex:'Γαμώτο, άργησα! — Чёрт, опоздал!'},
+
+  // ===== ЧИСЛА =====
+  {el:'ένα', ru:'1', cat:'Числа', type:'num', ex:'Ένα καφέ, παρακαλώ. — Один кофе, пожалуйста.'},
+  {el:'δύο', ru:'2', cat:'Числа', type:'num', ex:'Δύο εισιτήρια. — Два билета.'},
+  {el:'τρία', ru:'3', cat:'Числа', type:'num', ex:'Τρία παιδιά. — Три ребёнка.'},
+  {el:'τέσσερα', ru:'4', cat:'Числа', type:'num', ex:'Τέσσερις ώρες. — Четыре часа.'},
+  {el:'πέντε', ru:'5', cat:'Числа', type:'num', ex:'Πέντε ευρώ. — Пять евро.'},
+  {el:'έξι', ru:'6', cat:'Числа', type:'num', ex:'Έξι άτομα. — Шесть человек.'},
+  {el:'επτά', ru:'7', cat:'Числа', type:'num', ex:'Επτά μέρες. — Семь дней.'},
+  {el:'οκτώ', ru:'8', cat:'Числа', type:'num', ex:'Στις οκτώ το πρωί. — В восемь утра.'},
+  {el:'εννέα', ru:'9', cat:'Числа', type:'num', ex:'Εννέα ευρώ. — Девять евро.'},
+  {el:'δέκα', ru:'10', cat:'Числа', type:'num', ex:'Δέκα λεπτά. — Десять минут.'},
+  {el:'έντεκα', ru:'11', cat:'Числа', type:'num', ex:'Στις έντεκα. — В одиннадцать.'},
+  {el:'δώδεκα', ru:'12', cat:'Числа', type:'num', ex:'Δώδεκα μήνες. — Двенадцать месяцев.'},
+  {el:'είκοσι', ru:'20', cat:'Числа', type:'num', ex:'Είκοσι λεπτά. — Двадцать минут.'},
+  {el:'τριάντα', ru:'30', cat:'Числа', type:'num', ex:'Τριάντα ευρώ. — Тридцать евро.'},
+  {el:'σαράντα', ru:'40', cat:'Числа', type:'num', ex:'Σαράντα χρονών. — Сорока лет.'},
+  {el:'πενήντα', ru:'50', cat:'Числа', type:'num', ex:'Πενήντα ευρώ. — Пятьдесят евро.'},
+  {el:'εξήντα', ru:'60', cat:'Числа', type:'num', ex:'Εξήντα χρόνια. — Шестьдесят лет.'},
+  {el:'εβδομήντα', ru:'70', cat:'Числа', type:'num', ex:'Εβδομήντα κιλά. — Семьдесят килограмм.'},
+  {el:'ογδόντα', ru:'80', cat:'Числа', type:'num', ex:'Ογδόντα χρονών. — Восьмидесяти лет.'},
+  {el:'ενενήντα', ru:'90', cat:'Числа', type:'num', ex:'Ενενήντα λεπτά. — Девяносто минут.'},
+  {el:'εκατό', ru:'100', cat:'Числа', type:'num', ex:'Εκατό ευρώ. — Сто евро.'},
+  {el:'διακόσια', ru:'200', cat:'Числа', type:'num', ex:'Διακόσια χιλιόμετρα. — Двести километров.'},
+  {el:'χίλια', ru:'1000', cat:'Числа', type:'num', ex:'Χίλια ευρώ. — Тысяча евро.'},
+  {el:'πρώτος', ru:'1-й', cat:'Числа', type:'adj', ex:'Ο πρώτος όροφος. — Первый этаж.'},
+  {el:'δεύτερος', ru:'2-й', cat:'Числа', type:'adj', ex:'Ο δεύτερος δρόμος αριστερά. — Второй поворот налево.'},
+  {el:'τρίτος', ru:'3-й', cat:'Числа', type:'adj', ex:'Ο τρίτος όροφος. — Третий этаж.'},
+  {el:'μισός', ru:'½', cat:'Числа', type:'adj', ex:'Μισή ώρα. — Полчаса.'},
+  {el:'τέταρτο', ru:'¼', cat:'Числа', type:'noun', ex:'Τέταρτο παρά. — Без четверти.'},
+
+  // ===== ТРАНСПОРТ =====
+  {el:'λεωφορείο', art:'το', ru:'автобус', cat:'Транспорт', type:'noun', ex:'Παίρνω το λεωφορείο κάθε μέρα.'},
+  {el:'μετρό', art:'το', ru:'метро', cat:'Транспорт', type:'noun', ex:'Το μετρό είναι γρήγορο.'},
+  {el:'τραίνο', art:'το', ru:'поезд', cat:'Транспорт', type:'noun', ex:'Το τραίνο φεύγει στις δέκα.'},
+  {el:'ταξί', art:'το', ru:'такси', cat:'Транспорт', type:'noun', ex:'Παρακαλώ, καλέστε ένα ταξί.'},
+  {el:'πλοίο', art:'το', ru:'корабль', cat:'Транспорт', type:'noun', ex:'Το πλοίο φτάνει αύριο.'},
+  {el:'αεροπλάνο', art:'το', ru:'самолёт', cat:'Транспорт', type:'noun', ex:'Το αεροπλάνο απογειώνεται.'},
+  {el:'αυτοκίνητο', art:'το', ru:'машина / автомобиль', cat:'Транспорт', type:'noun', ex:'Το αυτοκίνητό μου είναι κόκκινο.'},
+  {el:'ποδήλατο', art:'το', ru:'велосипед', cat:'Транспорт', type:'noun', ex:'Πηγαίνω με ποδήλατο.'},
+  {el:'στάση', art:'η', ru:'остановка', cat:'Транспорт', type:'noun', ex:'Ποια είναι η επόμενη στάση;'},
+  {el:'αεροδρόμιο', art:'το', ru:'аэропорт', cat:'Транспорт', type:'noun', ex:'Το αεροδρόμιο είναι μακριά.'},
+  {el:'σταθμός', art:'ο', ru:'вокзал / станция', cat:'Транспорт', type:'noun', ex:'Ο σταθμός είναι κοντά.'},
+  {el:'εισιτήριο', art:'το', ru:'билет', cat:'Транспорт', type:'noun', ex:'Ένα εισιτήριο, παρακαλώ.'},
+  {el:'δρόμος', art:'ο', ru:'дорога / улица', cat:'Транспорт', type:'noun', ex:'Ο δρόμος είναι στενός.'},
+  {el:'βαλίτσα', art:'η', ru:'чемодан', cat:'Транспорт', type:'noun', ex:'Η βαλίτσα μου είναι βαριά.'},
+  {el:'λιμάνι', art:'το', ru:'порт / пристань', cat:'Транспорт', type:'noun', ex:'Το πλοίο φτάνει στο λιμάνι.'},
+  {el:'οδηγώ', ru:'водить (машину)', cat:'Транспорт', type:'verb', ex:'Οδηγώ κάθε μέρα.'},
+  {el:'ταξίδι', art:'το', ru:'путешествие / поездка', cat:'Транспорт', type:'noun', ex:'Το ταξίδι ήταν υπέροχο.'},
+  {el:'χάρτης', art:'ο', ru:'карта', cat:'Транспорт', type:'noun', ex:'Χρειάζομαι έναν χάρτη.'},
+
+  // ===== МАГАЗИН =====
+  {el:'κατάστημα', art:'το', ru:'магазин', cat:'Магазин', type:'noun', ex:'Το κατάστημα είναι ανοιχτό.'},
+  {el:'σούπερ μάρκετ', art:'το', ru:'супермаркет', cat:'Магазин', type:'noun', ex:'Πάω στο σούπερ μάρκετ.'},
+  {el:'αγορά', art:'η', ru:'рынок / покупка', cat:'Магазин', type:'noun', ex:'Η αγορά είναι γεμάτη κόσμο.'},
+  {el:'τιμή', art:'η', ru:'цена', cat:'Магазин', type:'noun', ex:'Ποια είναι η τιμή;'},
+  {el:'πληρώνω', ru:'платить', cat:'Магазин', type:'verb', ex:'Πληρώνω με κάρτα.'},
+  {el:'απόδειξη', art:'η', ru:'чек / квитанция', cat:'Магазин', type:'noun', ex:'Μπορώ να έχω απόδειξη;'},
+  {el:'έκπτωση', art:'η', ru:'скидка', cat:'Магазин', type:'noun', ex:'Έχετε εκπτώσεις σήμερα;'},
+  {el:'ακριβός', ru:'дорогой', cat:'Магазин', type:'adj', ex:'Αυτό είναι πολύ ακριβό.'},
+  {el:'φτηνός', ru:'дешёвый', cat:'Магазин', type:'adj', ex:'Ψάχνω κάτι πιο φτηνό.'},
+  {el:'μέγεθος', art:'το', ru:'размер', cat:'Магазин', type:'noun', ex:'Τι μέγεθος φοράτε;'},
+  {el:'δοκιμάζω', ru:'примерять / пробовать', cat:'Магазин', type:'verb', ex:'Μπορώ να το δοκιμάσω;'},
+  {el:'ρούχα', art:'τα', ru:'одежда', cat:'Магазин', type:'noun', ex:'Αγόρασα νέα ρούχα.'},
+  {el:'παπούτσια', art:'τα', ru:'обувь', cat:'Магазин', type:'noun', ex:'Τα παπούτσια μου είναι άνετα.'},
+  {el:'ταμείο', art:'το', ru:'касса', cat:'Магазин', type:'noun', ex:'Πού είναι το ταμείο;'},
+  {el:'σακούλα', art:'η', ru:'пакет / сумка', cat:'Магазин', type:'noun', ex:'Θέλετε σακούλα;'},
+  {el:'ψώνια', art:'τα', ru:'покупки', cat:'Магазин', type:'noun', ex:'Πάω για ψώνια.'},
+];
+
+// ============= GRAMMAR DATA =============
+const GRAMMAR = {
+  'είμαι': {
+    type:'verb', note:'Глагол "быть" — самый важный и неправильный в греческом.',
+    tenses:{
+      'Настоящее':[
+        {p:'εγώ',el:'είμαι'},
+        {p:'εσύ',el:'είσαι'},
+        {p:'αυτός/ή/ό',el:'είναι'},
+        {p:'εμείς',el:'είμαστε'},
+        {p:'εσείς',el:'είστε'},
+        {p:'αυτοί/ές/ά',el:'είναι'},
+      ],
+      'Прошедшее':[
+        {p:'εγώ',el:'ήμουν'},
+        {p:'εσύ',el:'ήσουν'},
+        {p:'αυτός/ή/ό',el:'ήταν'},
+        {p:'εμείς',el:'ήμαστε'},
+        {p:'εσείς',el:'ήσαστε'},
+        {p:'αυτοί/ές/ά',el:'ήταν'},
+      ],
+      'Будущее':[
+        {p:'εγώ',el:'θα είμαι'},
+        {p:'εσύ',el:'θα είσαι'},
+        {p:'αυτός/ή/ό',el:'θα είναι'},
+        {p:'εμείς',el:'θα είμαστε'},
+        {p:'εσείς',el:'θα είστε'},
+        {p:'αυτοί/ές/ά',el:'θα είναι'},
+      ],
+    }
+  },
+  'έχω': {
+    type:'verb', note:'Глагол "иметь" — второй по важности. Неправильное прошедшее.',
+    tenses:{
+      'Настоящее':[
+        {p:'εγώ',el:'έχω'},
+        {p:'εσύ',el:'έχεις'},
+        {p:'αυτός/ή/ό',el:'έχει'},
+        {p:'εμείς',el:'έχουμε'},
+        {p:'εσείς',el:'έχετε'},
+        {p:'αυτοί/ές/ά',el:'έχουν'},
+      ],
+      'Прошедшее':[
+        {p:'εγώ',el:'είχα'},
+        {p:'εσύ',el:'είχες'},
+        {p:'αυτός/ή/ό',el:'είχε'},
+        {p:'εμείς',el:'είχαμε'},
+        {p:'εσείς',el:'είχατε'},
+        {p:'αυτοί/ές/ά',el:'είχαν'},
+      ],
+      'Будущее':[
+        {p:'εγώ',el:'θα έχω'},
+        {p:'εσύ',el:'θα έχεις'},
+        {p:'αυτός/ή/ό',el:'θα έχει'},
+        {p:'εμείς',el:'θα έχουμε'},
+        {p:'εσείς',el:'θα έχετε'},
+        {p:'αυτοί/ές/ά',el:'θα έχουν'},
+      ],
+    }
+  },
+  'θέλω': {
+    type:'verb', note:'Правильный глагол 1-го спряжения. Основа на -ω.',
+    tenses:{
+      'Настоящее':[
+        {p:'εγώ',el:'θέλω'},
+        {p:'εσύ',el:'θέλεις'},
+        {p:'αυτός/ή/ό',el:'θέλει'},
+        {p:'εμείς',el:'θέλουμε'},
+        {p:'εσείς',el:'θέλετε'},
+        {p:'αυτοί/ές/ά',el:'θέλουν'},
+      ],
+      'Прошедшее':[
+        {p:'εγώ',el:'ήθελα'},
+        {p:'εσύ',el:'ήθελες'},
+        {p:'αυτός/ή/ό',el:'ήθελε'},
+        {p:'εμείς',el:'θέλαμε'},
+        {p:'εσείς',el:'θέλατε'},
+        {p:'αυτοί/ές/ά',el:'ήθελαν'},
+      ],
+      'Будущее':[
+        {p:'εγώ',el:'θα θέλω'},
+        {p:'εσύ',el:'θα θέλεις'},
+        {p:'αυτός/ή/ό',el:'θα θέλει'},
+        {p:'εμείς',el:'θα θέλουμε'},
+        {p:'εσείς',el:'θα θέλετε'},
+        {p:'αυτοί/ές/ά',el:'θα θέλουν'},
+      ],
+    }
+  },
+  'μπορώ': {
+    type:'verb', note:'Глагол 2-го спряжения (ударение на окончании: -ώ/-είς/-εί).',
+    tenses:{
+      'Настоящее':[
+        {p:'εγώ',el:'μπορώ'},
+        {p:'εσύ',el:'μπορείς'},
+        {p:'αυτός/ή/ό',el:'μπορεί'},
+        {p:'εμείς',el:'μπορούμε'},
+        {p:'εσείς',el:'μπορείτε'},
+        {p:'αυτοί/ές/ά',el:'μπορούν'},
+      ],
+      'Прошедшее':[
+        {p:'εγώ',el:'μπόρεσα'},
+        {p:'εσύ',el:'μπόρεσες'},
+        {p:'αυτός/ή/ό',el:'μπόρεσε'},
+        {p:'εμείς',el:'μπορέσαμε'},
+        {p:'εσείς',el:'μπορέσατε'},
+        {p:'αυτοί/ές/ά',el:'μπόρεσαν'},
+      ],
+      'Будущее':[
+        {p:'εγώ',el:'θα μπορώ'},
+        {p:'εσύ',el:'θα μπορείς'},
+        {p:'αυτός/ή/ό',el:'θα μπορεί'},
+        {p:'εμείς',el:'θα μπορούμε'},
+        {p:'εσείς',el:'θα μπορείτε'},
+        {p:'αυτοί/ές/ά',el:'θα μπορούν'},
+      ],
+    }
+  },
+  'κάνω': {
+    type:'verb', note:'Очень частотный глагол. Используется в десятках устойчивых выражений.',
+    tenses:{
+      'Настоящее':[
+        {p:'εγώ',el:'κάνω'},
+        {p:'εσύ',el:'κάνεις'},
+        {p:'αυτός/ή/ό',el:'κάνει'},
+        {p:'εμείς',el:'κάνουμε'},
+        {p:'εσείς',el:'κάνετε'},
+        {p:'αυτοί/ές/ά',el:'κάνουν'},
+      ],
+      'Прошедшее':[
+        {p:'εγώ',el:'έκανα'},
+        {p:'εσύ',el:'έκανες'},
+        {p:'αυτός/ή/ό',el:'έκανε'},
+        {p:'εμείς',el:'κάναμε'},
+        {p:'εσείς',el:'κάνατε'},
+        {p:'αυτοί/ές/ά',el:'έκαναν'},
+      ],
+      'Будущее':[
+        {p:'εγώ',el:'θα κάνω'},
+        {p:'εσύ',el:'θα κάνεις'},
+        {p:'αυτός/ή/ό',el:'θα κάνει'},
+        {p:'εμείς',el:'θα κάνουμε'},
+        {p:'εσείς',el:'θα κάνετε'},
+        {p:'αυτοί/ές/ά',el:'θα κάνουν'},
+      ],
+    }
+  },
+  'πάω': {
+    type:'verb', note:'Глагол движения. "Идти" и "ехать" — оба πάω. Неправильное прошедшее: πήγα.',
+    tenses:{
+      'Настоящее':[
+        {p:'εγώ',el:'πάω'},
+        {p:'εσύ',el:'πας'},
+        {p:'αυτός/ή/ό',el:'πάει'},
+        {p:'εμείς',el:'πάμε'},
+        {p:'εσείς',el:'πάτε'},
+        {p:'αυτοί/ές/ά',el:'πάνε'},
+      ],
+      'Прошедшее':[
+        {p:'εγώ',el:'πήγα'},
+        {p:'εσύ',el:'πήγες'},
+        {p:'αυτός/ή/ό',el:'πήγε'},
+        {p:'εμείς',el:'πήγαμε'},
+        {p:'εσείς',el:'πήγατε'},
+        {p:'αυτοί/ές/ά',el:'πήγαν'},
+      ],
+      'Будущее':[
+        {p:'εγώ',el:'θα πάω'},
+        {p:'εσύ',el:'θα πας'},
+        {p:'αυτός/ή/ό',el:'θα πάει'},
+        {p:'εμείς',el:'θα πάμε'},
+        {p:'εσείς',el:'θα πάτε'},
+        {p:'αυτοί/ές/ά',el:'θα πάνε'},
+      ],
+    }
+  },
+  'λέω': {
+    type:'verb', note:'Неправильный глагол. Прошедшее от другого корня: είπα. Будущее: θα πω.',
+    tenses:{
+      'Настоящее':[
+        {p:'εγώ',el:'λέω'},
+        {p:'εσύ',el:'λες'},
+        {p:'αυτός/ή/ό',el:'λέει'},
+        {p:'εμείς',el:'λέμε'},
+        {p:'εσείς',el:'λέτε'},
+        {p:'αυτοί/ές/ά',el:'λένε'},
+      ],
+      'Прошедшее':[
+        {p:'εγώ',el:'είπα'},
+        {p:'εσύ',el:'είπες'},
+        {p:'αυτός/ή/ό',el:'είπε'},
+        {p:'εμείς',el:'είπαμε'},
+        {p:'εσείς',el:'είπατε'},
+        {p:'αυτοί/ές/ά',el:'είπαν'},
+      ],
+      'Будущее':[
+        {p:'εγώ',el:'θα πω'},
+        {p:'εσύ',el:'θα πεις'},
+        {p:'αυτός/ή/ό',el:'θα πει'},
+        {p:'εμείς',el:'θα πούμε'},
+        {p:'εσείς',el:'θα πείτε'},
+        {p:'αυτοί/ές/ά',el:'θα πουν'},
+      ],
+    }
+  },
+  'μιλώ': {
+    type:'verb', note:'Глагол 2-го спряжения: -ώ/-άς/-ά/-άμε/-άτε/-άνε.',
+    tenses:{
+      'Настоящее':[
+        {p:'εγώ',el:'μιλώ'},
+        {p:'εσύ',el:'μιλάς'},
+        {p:'αυτός/ή/ό',el:'μιλά'},
+        {p:'εμείς',el:'μιλάμε'},
+        {p:'εσείς',el:'μιλάτε'},
+        {p:'αυτοί/ές/ά',el:'μιλάνε'},
+      ],
+      'Прошедшее':[
+        {p:'εγώ',el:'μίλησα'},
+        {p:'εσύ',el:'μίλησες'},
+        {p:'αυτός/ή/ό',el:'μίλησε'},
+        {p:'εμείς',el:'μιλήσαμε'},
+        {p:'εσείς',el:'μιλήσατε'},
+        {p:'αυτοί/ές/ά',el:'μίλησαν'},
+      ],
+      'Будущее':[
+        {p:'εγώ',el:'θα μιλήσω'},
+        {p:'εσύ',el:'θα μιλήσεις'},
+        {p:'αυτός/ή/ό',el:'θα μιλήσει'},
+        {p:'εμείς',el:'θα μιλήσουμε'},
+        {p:'εσείς',el:'θα μιλήσετε'},
+        {p:'αυτοί/ές/ά',el:'θα μιλήσουν'},
+      ],
+    }
+  },
+  'πρέπει': {
+    type:'verb', note:'Безличный глагол. Только 3-е лицо ед.ч. + να + субъюнктив. Пр.: πρέπει να πάω — мне нужно идти. Прошедшее: έπρεπε.',
+    tenses:{
+      'Формы':[
+        {p:'Настоящее',el:'πρέπει'},
+        {p:'Прошедшее',el:'έπρεπε'},
+        {p:'Будущее',el:'θα πρέπει'},
+      ],
+    }
+  },
+    // === Irregular verbs that need explicit GRAMMAR tables ===
+  'ξέρω': {
+    type:'verb', note:'Неправильный глагол. Прошедшее образуется с аугментом: ήξερα (несов. вид, "знал").',
+    tenses:{
+      'Настоящее':[
+        {p:'εγώ',el:'ξέρω'},{p:'εσύ',el:'ξέρεις'},{p:'αυτός/ή/ό',el:'ξέρει'},
+        {p:'εμείς',el:'ξέρουμε'},{p:'εσείς',el:'ξέρετε'},{p:'αυτοί/ές/ά',el:'ξέρουν'},
+      ],
+      'Прошедшее':[
+        {p:'εγώ',el:'ήξερα'},{p:'εσύ',el:'ήξερες'},{p:'αυτός/ή/ό',el:'ήξερε'},
+        {p:'εμείς',el:'ξέραμε'},{p:'εσείς',el:'ξέρατε'},{p:'αυτοί/ές/ά',el:'ήξεραν'},
+      ],
+      'Будущее':[
+        {p:'εγώ',el:'θα ξέρω'},{p:'εσύ',el:'θα ξέρεις'},{p:'αυτός/ή/ό',el:'θα ξέρει'},
+        {p:'εμείς',el:'θα ξέρουμε'},{p:'εσείς',el:'θα ξέρετε'},{p:'αυτοί/ές/ά',el:'θα ξέρουν'},
+      ],
+    }
+  },
+  'έρχομαι': {
+    type:'verb', note:'Деп. глагол движения. Прошедшее: ήρθα (от другого корня). Будущее: θα έρθω.',
+    tenses:{
+      'Настоящее':[
+        {p:'εγώ',el:'έρχομαι'},{p:'εσύ',el:'έρχεσαι'},{p:'αυτός/ή/ό',el:'έρχεται'},
+        {p:'εμείς',el:'ερχόμαστε'},{p:'εσείς',el:'έρχεστε'},{p:'αυτοί/ές/ά',el:'έρχονται'},
+      ],
+      'Прошедшее':[
+        {p:'εγώ',el:'ήρθα'},{p:'εσύ',el:'ήρθες'},{p:'αυτός/ή/ό',el:'ήρθε'},
+        {p:'εμείς',el:'ήρθαμε'},{p:'εσείς',el:'ήρθατε'},{p:'αυτοί/ές/ά',el:'ήρθαν'},
+      ],
+      'Будущее':[
+        {p:'εγώ',el:'θα έρθω'},{p:'εσύ',el:'θα έρθεις'},{p:'αυτός/ή/ό',el:'θα έρθει'},
+        {p:'εμείς',el:'θα έρθουμε'},{p:'εσείς',el:'θα έρθετε'},{p:'αυτοί/ές/ά',el:'θα έρθουν'},
+      ],
+    }
+  },
+  'γίνομαι': {
+    type:'verb', note:'Деп. глагол "становиться/происходить". Прошедшее: έγινα. Будущее: θα γίνω.',
+    tenses:{
+      'Настоящее':[
+        {p:'εγώ',el:'γίνομαι'},{p:'εσύ',el:'γίνεσαι'},{p:'αυτός/ή/ό',el:'γίνεται'},
+        {p:'εμείς',el:'γινόμαστε'},{p:'εσείς',el:'γίνεστε'},{p:'αυτοί/ές/ά',el:'γίνονται'},
+      ],
+      'Прошедшее':[
+        {p:'εγώ',el:'έγινα'},{p:'εσύ',el:'έγινες'},{p:'αυτός/ή/ό',el:'έγινε'},
+        {p:'εμείς',el:'έγιναμε'},{p:'εσείς',el:'έγινατε'},{p:'αυτοί/ές/ά',el:'έγιναν'},
+      ],
+      'Будущее':[
+        {p:'εγώ',el:'θα γίνω'},{p:'εσύ',el:'θα γίνεις'},{p:'αυτός/ή/ό',el:'θα γίνει'},
+        {p:'εμείς',el:'θα γίνουμε'},{p:'εσείς',el:'θα γίνετε'},{p:'αυτοί/ές/ά',el:'θα γίνουν'},
+      ],
+    }
+  },
+  'υπάρχει': {
+    type:'verb', note:'Безличный глагол "существует / есть". Только 3-е лицо: ед. и мн. число.',
+    tenses:{
+      'Настоящее':[
+        {p:'ед. ч.',el:'υπάρχει'},
+        {p:'мн. ч.',el:'υπάρχουν'},
+      ],
+      'Прошедшее':[
+        {p:'ед. ч.',el:'υπήρχε'},
+        {p:'мн. ч.',el:'υπήρχαν'},
+      ],
+      'Будущее':[
+        {p:'ед. ч.',el:'θα υπάρχει'},
+        {p:'мн. ч.',el:'θα υπάρχουν'},
+      ],
+    }
+  },
+  'φαίνομαι': {
+    type:'verb', note:'Деп. глагол "казаться/выглядеть". Прошедшее: φάνηκα. Будущее: θα φανώ.',
+    tenses:{
+      'Настоящее':[
+        {p:'εγώ',el:'φαίνομαι'},{p:'εσύ',el:'φαίνεσαι'},{p:'αυτός/ή/ό',el:'φαίνεται'},
+        {p:'εμείς',el:'φαινόμαστε'},{p:'εσείς',el:'φαίνεστε'},{p:'αυτοί/ές/ά',el:'φαίνονται'},
+      ],
+      'Прошедшее':[
+        {p:'εγώ',el:'φάνηκα'},{p:'εσύ',el:'φάνηκες'},{p:'αυτός/ή/ό',el:'φάνηκε'},
+        {p:'εμείς',el:'φανήκαμε'},{p:'εσείς',el:'φανήκατε'},{p:'αυτοί/ές/ά',el:'φάνηκαν'},
+      ],
+      'Будущее':[
+        {p:'εγώ',el:'θα φανώ'},{p:'εσύ',el:'θα φανείς'},{p:'αυτός/ή/ό',el:'θα φανεί'},
+        {p:'εμείς',el:'θα φανούμε'},{p:'εσείς',el:'θα φανείτε'},{p:'αυτοί/ές/ά',el:'θα φανούν'},
+      ],
+    }
+  },
+  'κλαίω': {
+    type:'verb', note:'Глагол "плакать". Прошедшее: έκλαψα. Будущее: θα κλάψω.',
+    tenses:{
+      'Настоящее':[
+        {p:'εγώ',el:'κλαίω'},{p:'εσύ',el:'κλαις'},{p:'αυτός/ή/ό',el:'κλαίει'},
+        {p:'εμείς',el:'κλαίμε'},{p:'εσείς',el:'κλαίτε'},{p:'αυτοί/ές/ά',el:'κλαίνε'},
+      ],
+      'Прошедшее':[
+        {p:'εγώ',el:'έκλαψα'},{p:'εσύ',el:'έκλαψες'},{p:'αυτός/ή/ό',el:'έκλαψε'},
+        {p:'εμείς',el:'κλάψαμε'},{p:'εσείς',el:'κλάψατε'},{p:'αυτοί/ές/ά',el:'έκλαψαν'},
+      ],
+      'Будущее':[
+        {p:'εγώ',el:'θα κλάψω'},{p:'εσύ',el:'θα κλάψεις'},{p:'αυτός/ή/ό',el:'θα κλάψει'},
+        {p:'εμείς',el:'θα κλάψουμε'},{p:'εσείς',el:'θα κλάψετε'},{p:'αυτοί/ές/ά',el:'θα κλάψουν'},
+      ],
+    }
+  },
+  'ζω': {
+    type:'verb', note:'Глагол "жить". Прошедшее: έζησα. Тип 2 по спряжению.',
+    tenses:{
+      'Настоящее':[
+        {p:'εγώ',el:'ζω'},{p:'εσύ',el:'ζεις'},{p:'αυτός/ή/ό',el:'ζει'},
+        {p:'εμείς',el:'ζούμε'},{p:'εσείς',el:'ζείτε'},{p:'αυτοί/ές/ά',el:'ζουν'},
+      ],
+      'Прошедшее':[
+        {p:'εγώ',el:'έζησα'},{p:'εσύ',el:'έζησες'},{p:'αυτός/ή/ό',el:'έζησε'},
+        {p:'εμείς',el:'ζήσαμε'},{p:'εσείς',el:'ζήσατε'},{p:'αυτοί/ές/ά',el:'έζησαν'},
+      ],
+      'Будущее':[
+        {p:'εγώ',el:'θα ζήσω'},{p:'εσύ',el:'θα ζήσεις'},{p:'αυτός/ή/ό',el:'θα ζήσει'},
+        {p:'εμείς',el:'θα ζήσουμε'},{p:'εσείς',el:'θα ζήσετε'},{p:'αυτοί/ές/ά',el:'θα ζήσουν'},
+      ],
+    }
+  },
+  // === Colors: adj grammar ===
+  'κόκκινος': {
+    type:'adj', note:'Тип -ος/-η/-ο.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'κόκκινος',f:'κόκκινη',n:'κόκκινο',ru:'красный/ая/ое'},
+        {c:'Родит.',m:'κόκκινου',f:'κόκκινης',n:'κόκκινου',ru:'красного/ой'},
+        {c:'Винит.',m:'κόκκινο(ν)',f:'κόκκινη',n:'κόκκινο',ru:'красный/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'κόκκινοι',f:'κόκκινες',n:'κόκκινα',ru:'красные'},
+        {c:'Родит.',m:'κόκκινων',f:'κόκκινων',n:'κόκκινων',ru:'красных'},
+        {c:'Винит.',m:'κόκκινους',f:'κόκκινες',n:'κόκκινα',ru:'красных/красные'},
+      ],
+    }
+  },
+  'πράσινος': {
+    type:'adj', note:'Тип -ος/-η/-ο.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'πράσινος',f:'πράσινη',n:'πράσινο',ru:'зелёный/ая/ое'},
+        {c:'Родит.',m:'πράσινου',f:'πράσινης',n:'πράσινου',ru:'зелёного/ой'},
+        {c:'Винит.',m:'πράσινο(ν)',f:'πράσινη',n:'πράσινο',ru:'зелёный/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'πράσινοι',f:'πράσινες',n:'πράσινα',ru:'зелёные'},
+        {c:'Родит.',m:'πράσινων',f:'πράσινων',n:'πράσινων',ru:'зелёных'},
+        {c:'Винит.',m:'πράσινους',f:'πράσινες',n:'πράσινα',ru:'зелёных/зелёные'},
+      ],
+    }
+  },
+  'κίτρινος': {
+    type:'adj', note:'Тип -ος/-η/-ο.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'κίτρινος',f:'κίτρινη',n:'κίτρινο',ru:'жёлтый/ая/ое'},
+        {c:'Родит.',m:'κίτρινου',f:'κίτρινης',n:'κίτρινου',ru:'жёлтого/ой'},
+        {c:'Винит.',m:'κίτρινο(ν)',f:'κίτρινη',n:'κίτρινο',ru:'жёлтый/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'κίτρινοι',f:'κίτρινες',n:'κίτρινα',ru:'жёлтые'},
+        {c:'Родит.',m:'κίτρινων',f:'κίτρινων',n:'κίτρινων',ru:'жёлтых'},
+        {c:'Винит.',m:'κίτρινους',f:'κίτρινες',n:'κίτρινα',ru:'жёлтых/жёлтые'},
+      ],
+    }
+  },
+  'άσπρος': {
+    type:'adj', note:'Тип -ος/-η/-ο.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'άσπρος',f:'άσπρη',n:'άσπρο',ru:'белый/ая/ое'},
+        {c:'Родит.',m:'άσπρου',f:'άσπρης',n:'άσπρου',ru:'белого/ой'},
+        {c:'Винит.',m:'άσπρο(ν)',f:'άσπρη',n:'άσπρο',ru:'белый/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'άσπροι',f:'άσπρες',n:'άσπρα',ru:'белые'},
+        {c:'Родит.',m:'άσπρων',f:'άσπρων',n:'άσπρων',ru:'белых'},
+        {c:'Винит.',m:'άσπρους',f:'άσπρες',n:'άσπρα',ru:'белых/белые'},
+      ],
+    }
+  },
+  'μαύρος': {
+    type:'adj', note:'Тип -ος/-η/-ο.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'μαύρος',f:'μαύρη',n:'μαύρο',ru:'чёрный/ая/ое'},
+        {c:'Родит.',m:'μαύρου',f:'μαύρης',n:'μαύρου',ru:'чёрного/ой'},
+        {c:'Винит.',m:'μαύρο(ν)',f:'μαύρη',n:'μαύρο',ru:'чёрный/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'μαύροι',f:'μαύρες',n:'μαύρα',ru:'чёрные'},
+        {c:'Родит.',m:'μαύρων',f:'μαύρων',n:'μαύρων',ru:'чёрных'},
+        {c:'Винит.',m:'μαύρους',f:'μαύρες',n:'μαύρα',ru:'чёрных/чёрные'},
+      ],
+    }
+  },
+  'χρυσός': {
+    type:'adj', note:'Тип -ος/-η/-ο.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'χρυσός',f:'χρυσή',n:'χρυσό',ru:'золотой/ая/ое'},
+        {c:'Родит.',m:'χρυσού',f:'χρυσής',n:'χρυσού',ru:'золотого/ой'},
+        {c:'Винит.',m:'χρυσό(ν)',f:'χρυσή',n:'χρυσό',ru:'золотой/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'χρυσοί',f:'χρυσές',n:'χρυσά',ru:'золотые'},
+        {c:'Родит.',m:'χρυσών',f:'χρυσών',n:'χρυσών',ru:'золотых'},
+        {c:'Винит.',m:'χρυσούς',f:'χρυσές',n:'χρυσά',ru:'золотых/золотые'},
+      ],
+    }
+  },
+  'μπλε': {
+    type:'adj', note:'Несклоняемое. Одна форма для всех родов, чисел, падежей.',
+    genders:{'Все формы':[{c:'Все роды',m:'μπλε',f:'μπλε',n:'μπλε',ru:'синий/голубой'}]}
+  },
+  'γκρι': {
+    type:'adj', note:'Несклоняемое. Одна форма для всех родов, чисел, падежей.',
+    genders:{'Все формы':[{c:'Все роды',m:'γκρι',f:'γκρι',n:'γκρι',ru:'серый'}]}
+  },
+  'πορτοκαλί': {
+    type:'adj', note:'Несклоняемое. Одна форма для всех родов, чисел, падежей.',
+    genders:{'Все формы':[{c:'Все роды',m:'πορτοκαλί',f:'πορτοκαλί',n:'πορτοκαλί',ru:'оранжевый'}]}
+  },
+  'ροζ': {
+    type:'adj', note:'Несклоняемое. Одна форма для всех родов, чисел, падежей.',
+    genders:{'Все формы':[{c:'Все роды',m:'ροζ',f:'ροζ',n:'ροζ',ru:'розовый'}]}
+  },
+  'μοβ': {
+    type:'adj', note:'Несклоняемое. Одна форма для всех родов, чисел, падежей.',
+    genders:{'Все формы':[{c:'Все роды',m:'μοβ',f:'μοβ',n:'μοβ',ru:'фиолетовый'}]}
+  },
+  'καφέ': {
+    type:'adj', note:'Несклоняемое. Одна форма для всех родов, чисел, падежей.',
+    genders:{'Все формы':[{c:'Все роды',m:'καφέ',f:'καφέ',n:'καφέ',ru:'коричневый'}]}
+  },
+
+  // Adjectives
+  'μεγάλος': {
+    type:'adj', note:'Тип -ος/-η/-ο. Согласуется с существительным в роде, числе, падеже.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'μεγάλος',f:'μεγάλη',n:'μεγάλο',ru:'большой/ая/ое'},
+        {c:'Родит.',m:'μεγάλου',f:'μεγάλης',n:'μεγάλου',ru:'большого/ой'},
+        {c:'Винит.',m:'μεγάλο(ν)',f:'μεγάλη',n:'μεγάλο',ru:'большой/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'μεγάλοι',f:'μεγάλες',n:'μεγάλα',ru:'большие'},
+        {c:'Родит.',m:'μεγάλων',f:'μεγάλων',n:'μεγάλων',ru:'больших'},
+        {c:'Винит.',m:'μεγάλους',f:'μεγάλες',n:'μεγάλα',ru:'большие'},
+      ],
+    },
+    comparative:{base:'μεγάλος',comp:'μεγαλύτερος',superl:'ο μεγαλύτερος',ru_comp:'больше',ru_superl:'самый большой'}
+  },
+  'μικρός': {
+    type:'adj', note:'Тип -ος/-η/-ο.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'μικρός',f:'μικρή',n:'μικρό',ru:'маленький/ая/ое'},
+        {c:'Родит.',m:'μικρού',f:'μικρής',n:'μικρού',ru:'маленького/ой'},
+        {c:'Винит.',m:'μικρό(ν)',f:'μικρή',n:'μικρό',ru:'маленького/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'μικροί',f:'μικρές',n:'μικρά',ru:'маленькие'},
+        {c:'Родит.',m:'μικρών',f:'μικρών',n:'μικρών',ru:'маленьких'},
+        {c:'Винит.',m:'μικρούς',f:'μικρές',n:'μικρά',ru:'маленьких/маленькие'},
+      ],
+    },
+    comparative:{base:'μικρός',comp:'μικρότερος',superl:'ο μικρότερος',ru_comp:'меньше',ru_superl:'самый маленький'}
+  },
+  'κακός': {
+    type:'adj', note:'Тип -ος/-η/-ο. Наречие: κακά. Сравн.: χειρότερος (хуже).',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'κακός',f:'κακή',n:'κακό',ru:'плохой/ая/ое'},
+        {c:'Родит.',m:'κακού',f:'κακής',n:'κακού',ru:'плохого/ой'},
+        {c:'Винит.',m:'κακό(ν)',f:'κακή',n:'κακό',ru:'плохой/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'κακοί',f:'κακές',n:'κακά',ru:'плохие'},
+        {c:'Родит.',m:'κακών',f:'κακών',n:'κακών',ru:'плохих'},
+        {c:'Винит.',m:'κακούς',f:'κακές',n:'κακά',ru:'плохих/плохие'},
+      ],
+    },
+    comparative:{base:'κακός',comp:'χειρότερος',superl:'ο χειρότερος',ru_comp:'хуже',ru_superl:'самый плохой'}
+  },
+  'ωραίος': {
+    type:'adj', note:'Тип -ος/-α/-ο (жен. на -α после гласной). Наречие: ωραία.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'ωραίος',f:'ωραία',n:'ωραίο',ru:'красивый/ая/ое'},
+        {c:'Родит.',m:'ωραίου',f:'ωραίας',n:'ωραίου',ru:'красивого/ой'},
+        {c:'Винит.',m:'ωραίο(ν)',f:'ωραία',n:'ωραίο',ru:'красивый/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'ωραίοι',f:'ωραίες',n:'ωραία',ru:'красивые'},
+        {c:'Родит.',m:'ωραίων',f:'ωραίων',n:'ωραίων',ru:'красивых'},
+        {c:'Винит.',m:'ωραίους',f:'ωραίες',n:'ωραία',ru:'красивых/красивые'},
+      ],
+    },
+    comparative:{base:'ωραίος',comp:'ωραιότερος',superl:'ο πιο ωραίος',ru_comp:'красивее',ru_superl:'самый красивый'}
+  },
+  'γρήγορος': {
+    type:'adj', note:'Тип -ος/-η/-ο. Наречие: γρήγορα.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'γρήγορος',f:'γρήγορη',n:'γρήγορο',ru:'быстрый/ая/ое'},
+        {c:'Родит.',m:'γρήγορου',f:'γρήγορης',n:'γρήγορου',ru:'быстрого/ой'},
+        {c:'Винит.',m:'γρήγορο(ν)',f:'γρήγορη',n:'γρήγορο',ru:'быстрый/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'γρήγοροι',f:'γρήγορες',n:'γρήγορα',ru:'быстрые'},
+        {c:'Родит.',m:'γρήγορων',f:'γρήγορων',n:'γρήγορων',ru:'быстрых'},
+        {c:'Винит.',m:'γρήγορους',f:'γρήγορες',n:'γρήγορα',ru:'быстрых/быстрые'},
+      ],
+    },
+    comparative:{base:'γρήγορος',comp:'γρηγορότερος',superl:'ο πιο γρήγορος',ru_comp:'быстрее',ru_superl:'самый быстрый'}
+  },
+  'αργός': {
+    type:'adj', note:'Тип -ος/-η/-ο. Наречие: αργά.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'αργός',f:'αργή',n:'αργό',ru:'медленный/ая/ое'},
+        {c:'Родит.',m:'αργού',f:'αργής',n:'αργού',ru:'медленного/ой'},
+        {c:'Винит.',m:'αργό(ν)',f:'αργή',n:'αργό',ru:'медленный/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'αργοί',f:'αργές',n:'αργά',ru:'медленные'},
+        {c:'Родит.',m:'αργών',f:'αργών',n:'αργών',ru:'медленных'},
+        {c:'Винит.',m:'αργούς',f:'αργές',n:'αργά',ru:'медленных/медленные'},
+      ],
+    },
+    comparative:{base:'αργός',comp:'αργότερος',superl:'ο πιο αργός',ru_comp:'медленнее',ru_superl:'самый медленный'}
+  },
+  'πολύς': {
+    type:'adj', note:'Неправильное. Именит. ед. муж./ср. особые (πολύς/πολύ), остальное от основы πολλ-. Наречие: πολύ (очень).',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'πολύς',f:'πολλή',n:'πολύ',ru:'много/очень'},
+        {c:'Родит.',m:'πολλού',f:'πολλής',n:'πολλού',ru:'многого/ой'},
+        {c:'Винит.',m:'πολύ(ν)',f:'πολλή',n:'πολύ',ru:'много/очень'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'πολλοί',f:'πολλές',n:'πολλά',ru:'многие/много'},
+        {c:'Родит.',m:'πολλών',f:'πολλών',n:'πολλών',ru:'многих'},
+        {c:'Винит.',m:'πολλούς',f:'πολλές',n:'πολλά',ru:'многих/многие'},
+      ],
+    },
+    comparative:{base:'πολύς',comp:'περισσότερος',superl:'ο περισσότερος',ru_comp:'больше',ru_superl:'наибольшее количество'}
+  },
+  'λίγος': {
+    type:'adj', note:'Тип -ος/-η/-ο. Наречие: λίγο (немного).',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'λίγος',f:'λίγη',n:'λίγο',ru:'малый/ая/ое'},
+        {c:'Родит.',m:'λίγου',f:'λίγης',n:'λίγου',ru:'малого/ой'},
+        {c:'Винит.',m:'λίγο(ν)',f:'λίγη',n:'λίγο',ru:'малый/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'λίγοι',f:'λίγες',n:'λίγα',ru:'немногие'},
+        {c:'Родит.',m:'λίγων',f:'λίγων',n:'λίγων',ru:'немногих'},
+        {c:'Винит.',m:'λίγους',f:'λίγες',n:'λίγα',ru:'немногих/немногие'},
+      ],
+    },
+    comparative:{base:'λίγος',comp:'λιγότερος',superl:'ο πιο λίγος',ru_comp:'меньше',ru_superl:'наименьшее количество'}
+  },
+  'νέος': {
+    type:'adj', note:'Тип -ος/-α/-ο (жен. на -α после гласной). Наречие: νέα.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'νέος',f:'νέα',n:'νέο',ru:'новый/молодой'},
+        {c:'Родит.',m:'νέου',f:'νέας',n:'νέου',ru:'нового/молодого'},
+        {c:'Винит.',m:'νέο(ν)',f:'νέα',n:'νέο',ru:'новый/молодой'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'νέοι',f:'νέες',n:'νέα',ru:'новые/молодые'},
+        {c:'Родит.',m:'νέων',f:'νέων',n:'νέων',ru:'новых/молодых'},
+        {c:'Винит.',m:'νέους',f:'νέες',n:'νέα',ru:'новых/молодых'},
+      ],
+    },
+    comparative:{base:'νέος',comp:'νεότερος',superl:'ο νεότερος',ru_comp:'новее/моложе',ru_superl:'самый молодой'}
+  },
+  'παλιός': {
+    type:'adj', note:'Тип -ος/-α/-ο (жен. на -α). Наречие: παλιά.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'παλιός',f:'παλιά',n:'παλιό',ru:'старый/ая/ое'},
+        {c:'Родит.',m:'παλιού',f:'παλιάς',n:'παλιού',ru:'старого/ой'},
+        {c:'Винит.',m:'παλιό(ν)',f:'παλιά',n:'παλιό',ru:'старый/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'παλιοί',f:'παλιές',n:'παλιά',ru:'старые'},
+        {c:'Родит.',m:'παλιών',f:'παλιών',n:'παλιών',ru:'старых'},
+        {c:'Винит.',m:'παλιούς',f:'παλιές',n:'παλιά',ru:'старых/старые'},
+      ],
+    },
+    comparative:{base:'παλιός',comp:'παλαιότερος',superl:'ο παλαιότερος',ru_comp:'старее',ru_superl:'самый старый'}
+  },
+  'ακριβός': {
+    type:'adj', note:'Тип -ος/-η/-ο. Наречие: ακριβά.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'ακριβός',f:'ακριβή',n:'ακριβό',ru:'дорогой/ая/ое'},
+        {c:'Родит.',m:'ακριβού',f:'ακριβής',n:'ακριβού',ru:'дорогого/ой'},
+        {c:'Винит.',m:'ακριβό(ν)',f:'ακριβή',n:'ακριβό',ru:'дорогой/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'ακριβοί',f:'ακριβές',n:'ακριβά',ru:'дорогие'},
+        {c:'Родит.',m:'ακριβών',f:'ακριβών',n:'ακριβών',ru:'дорогих'},
+        {c:'Винит.',m:'ακριβούς',f:'ακριβές',n:'ακριβά',ru:'дорогих/дорогие'},
+      ],
+    },
+    comparative:{base:'ακριβός',comp:'ακριβότερος',superl:'ο ακριβότερος',ru_comp:'дороже',ru_superl:'самый дорогой'}
+  },
+  'φτηνός': {
+    type:'adj', note:'Тип -ος/-η/-ο. Наречие: φτηνά.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'φτηνός',f:'φτηνή',n:'φτηνό',ru:'дешёвый/ая/ое'},
+        {c:'Родит.',m:'φτηνού',f:'φτηνής',n:'φτηνού',ru:'дешёвого/ой'},
+        {c:'Винит.',m:'φτηνό(ν)',f:'φτηνή',n:'φτηνό',ru:'дешёвый/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'φτηνοί',f:'φτηνές',n:'φτηνά',ru:'дешёвые'},
+        {c:'Родит.',m:'φτηνών',f:'φτηνών',n:'φτηνών',ru:'дешёвых'},
+        {c:'Винит.',m:'φτηνούς',f:'φτηνές',n:'φτηνά',ru:'дешёвых/дешёвые'},
+      ],
+    },
+    comparative:{base:'φτηνός',comp:'φτηνότερος',superl:'ο φτηνότερος',ru_comp:'дешевле',ru_superl:'самый дешёвый'}
+  },
+  'εύκολος': {
+    type:'adj', note:'Тип -ος/-η/-ο. Наречие: εύκολα.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'εύκολος',f:'εύκολη',n:'εύκολο',ru:'лёгкий/ая/ое'},
+        {c:'Родит.',m:'εύκολου',f:'εύκολης',n:'εύκολου',ru:'лёгкого/ой'},
+        {c:'Винит.',m:'εύκολο(ν)',f:'εύκολη',n:'εύκολο',ru:'лёгкий/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'εύκολοι',f:'εύκολες',n:'εύκολα',ru:'лёгкие'},
+        {c:'Родит.',m:'εύκολων',f:'εύκολων',n:'εύκολων',ru:'лёгких'},
+        {c:'Винит.',m:'εύκολους',f:'εύκολες',n:'εύκολα',ru:'лёгких/лёгкие'},
+      ],
+    },
+    comparative:{base:'εύκολος',comp:'ευκολότερος',superl:'ο ευκολότερος',ru_comp:'легче',ru_superl:'самый лёгкий'}
+  },
+  'δύσκολος': {
+    type:'adj', note:'Тип -ος/-η/-ο. Наречие: δύσκολα.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'δύσκολος',f:'δύσκολη',n:'δύσκολο',ru:'трудный/ая/ое'},
+        {c:'Родит.',m:'δύσκολου',f:'δύσκολης',n:'δύσκολου',ru:'трудного/ой'},
+        {c:'Винит.',m:'δύσκολο(ν)',f:'δύσκολη',n:'δύσκολο',ru:'трудный/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'δύσκολοι',f:'δύσκολες',n:'δύσκολα',ru:'трудные'},
+        {c:'Родит.',m:'δύσκολων',f:'δύσκολων',n:'δύσκολων',ru:'трудных'},
+        {c:'Винит.',m:'δύσκολους',f:'δύσκολες',n:'δύσκολα',ru:'трудных/трудные'},
+      ],
+    },
+    comparative:{base:'δύσκολος',comp:'δυσκολότερος',superl:'ο δυσκολότερος',ru_comp:'труднее',ru_superl:'самый трудный'}
+  },
+  'σωστός': {
+    type:'adj', note:'Тип -ος/-η/-ο. Наречие: σωστά.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'σωστός',f:'σωστή',n:'σωστό',ru:'правильный/ая/ое'},
+        {c:'Родит.',m:'σωστού',f:'σωστής',n:'σωστού',ru:'правильного/ой'},
+        {c:'Винит.',m:'σωστό(ν)',f:'σωστή',n:'σωστό',ru:'правильный/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'σωστοί',f:'σωστές',n:'σωστά',ru:'правильные'},
+        {c:'Родит.',m:'σωστών',f:'σωστών',n:'σωστών',ru:'правильных'},
+        {c:'Винит.',m:'σωστούς',f:'σωστές',n:'σωστά',ru:'правильных/правильные'},
+      ],
+    },
+    comparative:{base:'σωστός',comp:'πιο σωστός',superl:'ο πιο σωστός',ru_comp:'правильнее',ru_superl:'самый правильный'}
+  },
+  'λάθος': {
+    type:'adj', note:'Несклоняемое. Форма не меняется ни по роду, ни по числу, ни по падежу.',
+    genders:{
+      'Все формы':[
+        {c:'Все роды',m:'λάθος',f:'λάθος',n:'λάθος',ru:'неправильный/ошибочный'},
+      ],
+    }
+  },
+  'ίδιος': {
+    type:'adj', note:'Тип -ος/-α/-ο. Значение: "тот же самый / одинаковый".',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'ίδιος',f:'ίδια',n:'ίδιο',ru:'тот же/та же/то же'},
+        {c:'Родит.',m:'ίδιου',f:'ίδιας',n:'ίδιου',ru:'того же/той же'},
+        {c:'Винит.',m:'ίδιο(ν)',f:'ίδια',n:'ίδιο',ru:'того же/ту же/то же'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'ίδιοι',f:'ίδιες',n:'ίδια',ru:'те же'},
+        {c:'Родит.',m:'ίδιων',f:'ίδιων',n:'ίδιων',ru:'тех же'},
+        {c:'Винит.',m:'ίδιους',f:'ίδιες',n:'ίδια',ru:'тех же'},
+      ],
+    }
+  },
+  'διαφορετικός': {
+    type:'adj', note:'Тип -ος/-η/-ο. Наречие: διαφορετικά.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'διαφορετικός',f:'διαφορετική',n:'διαφορετικό',ru:'другой/ая/ое'},
+        {c:'Родит.',m:'διαφορετικού',f:'διαφορετικής',n:'διαφορετικού',ru:'другого/ой'},
+        {c:'Винит.',m:'διαφορετικό(ν)',f:'διαφορετική',n:'διαφορετικό',ru:'другой/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'διαφορετικοί',f:'διαφορετικές',n:'διαφορετικά',ru:'другие'},
+        {c:'Родит.',m:'διαφορετικών',f:'διαφορετικών',n:'διαφορετικών',ru:'других'},
+        {c:'Винит.',m:'διαφορετικούς',f:'διαφορετικές',n:'διαφορετικά',ru:'других/другие'},
+      ],
+    },
+    comparative:{base:'διαφορετικός',comp:'πιο διαφορετικός',superl:'ο πιο διαφορετικός',ru_comp:'более разный',ru_superl:'самый разный'}
+  },
+  'ελεύθερος': {
+    type:'adj', note:'Тип -ος/-η/-ο. Наречие: ελεύθερα.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'ελεύθερος',f:'ελεύθερη',n:'ελεύθερο',ru:'свободный/ая/ое'},
+        {c:'Родит.',m:'ελεύθερου',f:'ελεύθερης',n:'ελεύθερου',ru:'свободного/ой'},
+        {c:'Винит.',m:'ελεύθερο(ν)',f:'ελεύθερη',n:'ελεύθερο',ru:'свободный/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'ελεύθεροι',f:'ελεύθερες',n:'ελεύθερα',ru:'свободные'},
+        {c:'Родит.',m:'ελεύθερων',f:'ελεύθερων',n:'ελεύθερων',ru:'свободных'},
+        {c:'Винит.',m:'ελεύθερους',f:'ελεύθερες',n:'ελεύθερα',ru:'свободных/свободные'},
+      ],
+    },
+    comparative:{base:'ελεύθερος',comp:'πιο ελεύθερος',superl:'ο πιο ελεύθερος',ru_comp:'более свободный',ru_superl:'самый свободный'}
+  },
+  'σημαντικός': {
+    type:'adj', note:'Тип -ος/-η/-ο. Наречие: σημαντικά.',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'σημαντικός',f:'σημαντική',n:'σημαντικό',ru:'важный/ая/ое'},
+        {c:'Родит.',m:'σημαντικού',f:'σημαντικής',n:'σημαντικού',ru:'важного/ой'},
+        {c:'Винит.',m:'σημαντικό(ν)',f:'σημαντική',n:'σημαντικό',ru:'важный/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'σημαντικοί',f:'σημαντικές',n:'σημαντικά',ru:'важные'},
+        {c:'Родит.',m:'σημαντικών',f:'σημαντικών',n:'σημαντικών',ru:'важных'},
+        {c:'Винит.',m:'σημαντικούς',f:'σημαντικές',n:'σημαντικά',ru:'важных/важные'},
+      ],
+    },
+    comparative:{base:'σημαντικός',comp:'σημαντικότερος',superl:'ο σημαντικότερος',ru_comp:'важнее',ru_superl:'самый важный'}
+  },
+  'καλός': {
+    type:'adj', note:'Тип -ος/-η/-ο. Наречие: καλά (хорошо).',
+    genders:{
+      'Ед. число':[
+        {c:'Именит.',m:'καλός',f:'καλή',n:'καλό',ru:'хороший/ая/ое'},
+        {c:'Родит.',m:'καλού',f:'καλής',n:'καλού',ru:'хорошего/ой'},
+        {c:'Винит.',m:'καλό(ν)',f:'καλή',n:'καλό',ru:'хорошего/ую/ое'},
+      ],
+      'Мн. число':[
+        {c:'Именит.',m:'καλοί',f:'καλές',n:'καλά',ru:'хорошие'},
+        {c:'Родит.',m:'καλών',f:'καλών',n:'καλών',ru:'хороших'},
+        {c:'Винит.',m:'καλούς',f:'καλές',n:'καλά',ru:'хороших/хорошие'},
+      ],
+    },
+    comparative:{base:'καλός',comp:'καλύτερος',superl:'ο καλύτερος',ru_comp:'лучше',ru_superl:'самый лучший'}
+  },
+};
+</script>
+
+<!-- ════════════════════════════════════════════════════════
+     LOGIC LAYER — логика приложения (ниже)
+     ════════════════════════════════════════════════════════ -->
+
+<script>
+// ============= GAME LOGIC =============
+let deck = [];
+let current = 0;
+let mode = 'el-ru';
+let isFlipped = false;
+let activeCategories = new Set();
+// status filters: multi-select. 'all' means no filter. others: 'unseen','studying','known'
+let statusFilters = new Set(['all']);
+let knownWords = new Set();
+let studyingWords = new Set();
+const allCategories = [...new Set(WORDS.map(w => w.cat))];
+let grammarOpen = false;
+
+function ev(e, fn) { e.stopPropagation(); fn(); }
+
+function saveProgress() {
+  try {
+    localStorage.setItem('greek_known', JSON.stringify([...knownWords]));
+    localStorage.setItem('greek_studying', JSON.stringify([...studyingWords]));
+  } catch(e) {}
+}
+
+function loadProgress() {
+  try {
+    const k = localStorage.getItem('greek_known');
+    if (k) knownWords = new Set(JSON.parse(k));
+    const s = localStorage.getItem('greek_studying');
+    if (s) studyingWords = new Set(JSON.parse(s));
+  } catch(e) {}
+}
+
+function clearProgress() {
+  if (!confirm('Сбросить все флаги?')) return;
+  studyingWords = new Set();
+  knownWords = new Set();
+  saveProgress();
+  updateStats();
+  renderCard();
+}
+
+function init() {
+  loadProgress();
+  const fd = document.getElementById('filters');
+  fd.innerHTML = '';
+  const ab = document.createElement('button');
+  ab.className = 'filter-btn active'; ab.textContent = 'Все'; ab.dataset.cat = 'all';
+  ab.onclick = () => toggleCatFilter('all', ab); fd.appendChild(ab);
+  allCategories.forEach(cat => {
+    const b = document.createElement('button');
+    b.className = 'filter-btn'; b.textContent = cat; b.dataset.cat = cat;
+    b.onclick = () => toggleCatFilter(cat, b); fd.appendChild(b);
+  });
+  activeCategories = new Set(['all']);
+  buildDeck();
+}
+
+function toggleCatFilter(cat, btn) {
+  if (cat === 'all') {
+    activeCategories = new Set(['all']);
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  } else {
+    activeCategories.delete('all');
+    document.querySelector('[data-cat=all]').classList.remove('active');
+    if (activeCategories.has(cat)) {
+      activeCategories.delete(cat); btn.classList.remove('active');
+      if (activeCategories.size === 0) { activeCategories.add('all'); document.querySelector('[data-cat=all]').classList.add('active'); }
+    } else {
+      activeCategories.add(cat); btn.classList.add('active');
+    }
+  }
+  buildDeck();
+}
+
+// Status filters: multi-select. 'all' deselects others; selecting specific deselects 'all'
+function toggleStatusFilter(filter) {
+  if (filter === 'all') {
+    statusFilters = new Set(['all']);
+  } else {
+    statusFilters.delete('all');
+    if (statusFilters.has(filter)) {
+      statusFilters.delete(filter);
+      if (statusFilters.size === 0) statusFilters.add('all');
+    } else {
+      statusFilters.add(filter);
+    }
+  }
+  updateStatusFilterUI();
+  buildDeck();
+}
+
+function updateStatusFilterUI() {
+  const isAll = statusFilters.has('all');
+  const btn = id => document.getElementById(id);
+  btn('sf-all').className = 'sflt-btn' + (isAll ? ' active-all' : '');
+  btn('sf-unseen').className = 'sflt-btn' + (statusFilters.has('unseen') ? ' active-unseen' : '');
+  btn('sf-studying').className = 'sflt-btn' + (statusFilters.has('studying') ? ' active-studying' : '');
+  btn('sf-known').className = 'sflt-btn' + (statusFilters.has('known') ? ' active-known' : '');
+}
+
+function wordMatchesStatus(w) {
+  if (statusFilters.has('all')) return true;
+  const isKnown = knownWords.has(w.el);
+  const isStudying = studyingWords.has(w.el);
+  const isUnseen = !isKnown && !isStudying;
+  if (statusFilters.has('known') && isKnown) return true;
+  if (statusFilters.has('studying') && isStudying) return true;
+  if (statusFilters.has('unseen') && isUnseen) return true;
+  return false;
+}
+
+function getFilteredWords() {
+  let f = activeCategories.has('all') ? [...WORDS] : WORDS.filter(w => activeCategories.has(w.cat));
+  return f.filter(w => wordMatchesStatus(w));
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function toggleShuffle() {
+  buildDeck();
+}
+
+function buildDeck() {
+  deck = getFilteredWords();
+  shuffle(deck);
+  current = 0;
+  updateStats();
+  renderCard();
+}
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('mode-el-ru').classList.toggle('active', m === 'el-ru');
+  document.getElementById('mode-ru-el').classList.toggle('active', m === 'ru-el');
+  renderCard();
+}
+
+function setCardWord(elId, word, art) {
+  const el = document.getElementById(elId);
+  if (art) {
+    el.innerHTML = '<span class="card-article">' + art + '</span>' + word;
+  } else {
+    el.textContent = word;
+  }
+}
+
+function renderCard() {
+  document.getElementById('cardScene').classList.remove('flipped');
+  isFlipped = false;
+  document.getElementById('flipHint').textContent = '↕ нажми на карточку, чтобы перевернуть';
+
+  if (deck.length === 0) {
+    document.getElementById('frontCategory').textContent = '';
+    document.getElementById('frontWord').textContent = 'Нет слов';
+    document.getElementById('frontHint').textContent = 'Измени фильтры';
+    document.getElementById('backTranslation').textContent = '';
+    document.getElementById('backTranslit').textContent = '';
+    document.getElementById('backExample').textContent = '';
+    document.getElementById('backCategory').textContent = '';
+    document.getElementById('progressText').textContent = '0 / 0';
+    document.getElementById('progressFill').style.width = '0%';
+    updateFlagButtons(null);
+    return;
+  }
+
+  const w = deck[current];
+  const isNum = w.type === 'num';
+  document.getElementById('frontWord').classList.toggle('is-number', isNum);
+  document.getElementById('backTranslation').classList.toggle('is-number', isNum);
+  if (mode === 'el-ru') {
+    document.getElementById('frontCategory').textContent = w.cat;
+    setCardWord('frontWord', w.el, w.art);
+    document.getElementById('frontHint').textContent = '';
+    document.getElementById('backCategory').textContent = w.cat;
+    document.getElementById('backTranslation').textContent = w.ru;
+    document.getElementById('backTranslit').textContent = '';
+    document.getElementById('backExample').textContent = w.ex || '';
+  } else {
+    document.getElementById('frontCategory').textContent = w.cat;
+    document.getElementById('frontWord').textContent = w.ru;
+    document.getElementById('frontHint').textContent = '';
+    document.getElementById('backCategory').textContent = w.cat;
+    setCardWord('backTranslation', w.el, w.art);
+    document.getElementById('backTranslit').textContent = '';
+    document.getElementById('backExample').textContent = w.ex || '';
+  }
+
+  updateFlagButtons(w);
+  document.getElementById('progressText').textContent = (current + 1) + ' / ' + deck.length;
+  document.getElementById('progressFill').style.width = ((current + 1) / deck.length * 100) + '%';
+
+  // refresh grammar panel if open
+  if (grammarOpen) renderGrammar(w);
+}
+
+function updateFlagButtons(w) {
+  const isS = w ? studyingWords.has(w.el) : false;
+  const isK = w ? knownWords.has(w.el) : false;
+  ['studyingBtn','studyingBtn2'].forEach(id => {
+    const b = document.getElementById(id);
+    if(b) b.className = 'card-flag-btn' + (isS ? ' studying-active' : '');
+  });
+  ['knownBtn','knownBtn2'].forEach(id => {
+    const b = document.getElementById(id);
+    if(b) b.className = 'card-flag-btn' + (isK ? ' known-active' : '');
+  });
+}
+
+function flipCard() {
+  isFlipped = !isFlipped;
+  document.getElementById('cardScene').classList.toggle('flipped', isFlipped);
+  document.getElementById('flipHint').textContent = isFlipped
+    ? '↩ нажми ещё раз, чтобы вернуть'
+    : '↕ нажми на карточку, чтобы перевернуть';
+}
+
+function nextCard() {
+  if (deck.length === 0) return;
+  current = (current + 1) % deck.length;
+  renderCard();
+}
+
+function prevCard() {
+  if (deck.length === 0) return;
+  current = (current - 1 + deck.length) % deck.length;
+  renderCard();
+}
+
+function toggleStudying() {
+  if (deck.length === 0) return;
+  const w = deck[current];
+  if (studyingWords.has(w.el)) studyingWords.delete(w.el);
+  else studyingWords.add(w.el);
+  saveProgress();
+  rebuildIfNeeded();
+  updateStats();
+  updateFlagButtons(deck[current] || null);
+}
+
+function toggleKnown() {
+  if (deck.length === 0) return;
+  const w = deck[current];
+  if (knownWords.has(w.el)) knownWords.delete(w.el);
+  else knownWords.add(w.el);
+  saveProgress();
+  rebuildIfNeeded();
+  updateStats();
+  updateFlagButtons(deck[current] || null);
+}
+
+function rebuildIfNeeded() {
+  // only rebuild if current status filter would now exclude the word
+  if (!statusFilters.has('all')) {
+    const newDeck = getFilteredWords();
+    if (newDeck.length !== deck.length) {
+      deck = newDeck;
+      if (current >= deck.length) current = Math.max(0, deck.length - 1);
+      renderCard();
+    }
+  }
+}
+
+function updateStats() {
+  const allFiltered = activeCategories.has('all') ? [...WORDS] : WORDS.filter(w => activeCategories.has(w.cat));
+  const total = allFiltered.length;
+  const studying = allFiltered.filter(w => studyingWords.has(w.el)).length;
+  const known = allFiltered.filter(w => knownWords.has(w.el)).length;
+  const unseen = allFiltered.filter(w => !studyingWords.has(w.el) && !knownWords.has(w.el)).length;
+
+  document.getElementById('statKnown').textContent = known;
+  document.getElementById('statStudying').textContent = studying;
+  document.getElementById('statUnseen').textContent = unseen;
+  document.getElementById('statTotal').textContent = total;
+}
+
+
+
+// ============= GRAMMAR PANEL (inline) =============
+let grammarTab=null;
+
+function toggleGrammar(){
+  const w = deck[current];
+  if (!w) return;
+  grammarOpen = !grammarOpen;
+  const panel = document.getElementById('grammarInline');
+  const infoBtns = document.querySelectorAll('.card-info-btn');
+  if (grammarOpen) {
+    grammarTab = null;
+    renderGrammar(w);
+    panel.classList.add('open');
+    infoBtns.forEach(b => b.classList.add('info-open'));
+  } else {
+    panel.classList.remove('open');
+    infoBtns.forEach(b => b.classList.remove('info-open'));
+  }
+}
+
+// Keep old names as aliases for anything that might call them
+function openGrammar() { if (!grammarOpen) toggleGrammar(); }
+function closeGrammar() { if (grammarOpen) toggleGrammar(); }
+
+function renderGrammar(w){
+  const container=document.getElementById('grammarContent');
+  const g=GRAMMAR[w.el];
+  const wtype=w.type||'';
+
+  let html=`<div class="grammar-word-header">${w.el}</div>`;
+  html+=`<div class="grammar-word-ru">${w.ru}</div>`;
+
+  if(!g){
+    if(wtype==='verb'){
+      html += autoConjugate(w.el, w.ru);
+    } else if(wtype==='adj'){
+      html+=`<div class="grammar-note">Прилагательное <em>${w.el}</em> изменяется по роду, числу и падежу.<br>Пример: ${w.ex||'—'}</div>`;
+    } else if(wtype==='adverb'||wtype==='particle'){
+      html+=`<div class="grammar-note">Слово <em>${w.el}</em> не изменяется.<br>Пример: ${w.ex||'—'}</div>`;
+    } else if(wtype==='phrase'){
+      html+=`<div class="grammar-note">Устойчивое выражение.<br>Пример: ${w.ex||'—'}</div>`;
+    } else if(wtype==='pronoun'){
+      if(['μου','σου','του','της','μας','σας','τους'].includes(w.el)) { html+=possessiveTable(w.el); } else { html+=pronounTable(w.el); }
+    } else if(wtype==='num'){
+      html+=`<div class="grammar-note">Числительное <em>${w.el}</em>.<br>Пример: ${w.ex||'—'}</div>`;
+    } else if(wtype==='noun'){
+      html+=`<div class="grammar-note">Существительное <em>${w.el}</em>. Артикль: ${w.art||'—'}<br>Пример: ${w.ex||'—'}</div>`;
+    } else {
+      html+=`<div class="grammar-note">Пример: ${w.ex||'—'}</div>`;
+    }
+    if(['ποιος','ποιο','πόσο'].includes(w.el)){
+      html='<div class="grammar-word-header">'+w.el+'</div><div class="grammar-word-ru">'+w.ru+'</div>'+questionNote(w.el);
+    }
+    container.innerHTML=html; return;
+  }
+
+  if(g.type==='verb'){
+    const tNames=Object.keys(g.tenses);
+    if(!grammarTab||!tNames.includes(grammarTab)) grammarTab=tNames[0];
+    html+=`<div class="tab-row">`;
+    tNames.forEach(t=>{
+      html+=`<button class="tab-btn${t===grammarTab?' active':''}" onclick="switchTab('${t}')">${t}</button>`;
+    });
+    html+=`</div>`;
+    tNames.forEach(t=>{
+      const rows=g.tenses[t];
+      const id='gtab_'+t.replace(/[^a-zA-Zа-яА-Я]/g,'_');
+      html+=`<div id="${id}" style="display:${t===grammarTab?'block':'none'}">`;
+      html+=`<table class="gtable"><thead><tr><th>Лицо</th><th>Форма</th></tr></thead><tbody>`;
+      rows.forEach(r=>{
+        html+=`<tr><td class="label">${r.p}</td><td class="greek">${r.el}</td></tr>`;
+      });
+      html+=`</tbody></table></div>`;
+    });
+    if(g.note) html+=`<div class="grammar-note">${g.note}</div>`;
+  }
+
+  if(g.type==='adj'){
+    const numNames=Object.keys(g.genders);
+    if(!grammarTab||!numNames.includes(grammarTab)) grammarTab=numNames[0];
+    html+=`<div class="tab-row">`;
+    numNames.forEach(n=>{
+      html+=`<button class="tab-btn${n===grammarTab?' active':''}" onclick="switchTab('${n}')">${n}</button>`;
+    });
+    html+=`</div>`;
+    numNames.forEach(num=>{
+      const rows=g.genders[num];
+      const id='gtab_'+num.replace(/[^a-zA-Zа-яА-Я]/g,'_');
+      html+=`<div id="${id}" style="display:${num===grammarTab?'block':'none'}">`;
+      // Two side-by-side compact tables: Муж.+Ср. | Жен.
+      html+=`<table class="gtable"><thead><tr><th>Падеж</th><th>Муж.</th><th>Ср.</th><th>Жен.</th></tr></thead><tbody>`;
+      rows.forEach(r=>{
+        html+=`<tr><td class="label">${r.c}</td><td class="greek">${r.m}</td><td class="greek">${r.n}</td><td class="greek">${r.f}</td></tr>`;
+      });
+      html+=`</tbody></table></div>`;
+    });
+    if(g.comparative){
+      html+=`<div class="grammar-section-title">Степени сравнения</div>`;
+      html+=`<table class="gtable"><thead><tr><th>Степень</th><th>Форма</th></tr></thead><tbody>`;
+      html+=`<tr><td class="label">Положит.</td><td class="greek">${g.comparative.base}</td></tr>`;
+      html+=`<tr><td class="label">Сравнит.</td><td class="greek">${g.comparative.comp}</td></tr>`;
+      html+=`<tr><td class="label">Превосх.</td><td class="greek">${g.comparative.superl}</td></tr>`;
+      html+=`</tbody></table>`;
+    }
+    if(g.note) html+=`<div class="grammar-note">${g.note}</div>`;
+  }
+
+  container.innerHTML=html;
+}
+
+function switchTab(name){
+  grammarTab=name;
+  document.querySelectorAll('[id^="gtab_"]').forEach(el=>el.style.display='none');
+  const id='gtab_'+name.replace(/[^a-zA-Zа-яА-Я]/g,'_');
+  const target=document.getElementById(id);
+  if(target) target.style.display='block';
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    b.classList.toggle('active',b.textContent===name);
+  });
+}
+
+function possessiveTable(word) {
+  return `<div class="grammar-section-title">Притяжательные местоимения</div>
+  <table class="gtable"><thead><tr><th>Лицо</th><th>Кратк. форма</th><th>Полная форма (м.)</th></tr></thead><tbody>
+  <tr><td class="label">я (мой)</td><td class="greek">μου</td><td class="greek">δικός/ή/ό μου</td></tr>
+  <tr><td class="label">ты (твой)</td><td class="greek">σου</td><td class="greek">δικός/ή/ό σου</td></tr>
+  <tr><td class="label">он (его)</td><td class="greek">του</td><td class="greek">δικός/ή/ό του</td></tr>
+  <tr><td class="label">она (её)</td><td class="greek">της</td><td class="greek">δικός/ή/ό της</td></tr>
+  <tr><td class="label">мы (наш)</td><td class="greek">μας</td><td class="greek">δικός/ή/ό μας</td></tr>
+  <tr><td class="label">вы (ваш)</td><td class="greek">σας</td><td class="greek">δικός/ή/ό σας</td></tr>
+  <tr><td class="label">они (их)</td><td class="greek">τους</td><td class="greek">δικός/ή/ό τους</td></tr>
+  </tbody></table>
+  <div class="grammar-note">
+    <strong>Краткая форма</strong> ставится после существительного с артиклем: <em>το σπίτι μου</em> (мой дом).<br>
+    <strong>Полная форма</strong> δικός μου согласуется по роду: <em>δικός</em> (м.) / <em>δική</em> (ж.) / <em>δικό</em> (ср.)<br>
+    Пример: <em>Είναι δικό μου.</em> — Это моё.
+  </div>`;
+}
+
+function questionNote(word){
+  const notes={
+    'ποιος':'<div class="grammar-note"><strong>ποιος</strong> изменяется по роду и числу:<br>Муж.: <em>ποιος</em> · Жен.: <em>ποια</em> · Ср.: <em>ποιο</em><br>Мн.ч.: <em>ποιοι / ποιες / ποια</em></div>',
+    'ποιο':'<div class="grammar-note"><strong>ποιο</strong> — средний род от ποιος.<br>Муж.: <em>ποιος</em> · Жен.: <em>ποια</em> · Ср.: <em>ποιο</em></div>',
+    'πόσο':'<div class="grammar-note"><strong>πόσο</strong> изменяется по роду:<br>Муж.: <em>πόσος</em> · Жен.: <em>πόση</em> · Ср.: <em>πόσο</em><br>Мн.ч.: <em>πόσοι / πόσες / πόσα</em></div>',
+  };
+  return notes[word]||'<div class="grammar-note">Это вопросительное слово не изменяется по лицам.</div>';
+}
+
+function pronounTable(word){
+  if(word==='αυτός'||word==='αυτή'||word==='αυτό'||word==='αυτοί'){
+    return `<div class="grammar-section-title">Склонение αυτός / αυτή / αυτό</div>
+    <table class="gtable"><thead><tr><th>Падеж</th><th>Муж.</th><th>Жен.</th><th>Ср.</th></tr></thead><tbody>
+    <tr><td class="label">Именит. ед.</td><td class="greek">αυτός</td><td class="greek">αυτή</td><td class="greek">αυτό</td></tr>
+    <tr><td class="label">Родит. ед.</td><td class="greek">αυτού</td><td class="greek">αυτής</td><td class="greek">αυτού</td></tr>
+    <tr><td class="label">Винит. ед.</td><td class="greek">αυτόν</td><td class="greek">αυτή(ν)</td><td class="greek">αυτό</td></tr>
+    <tr><td class="label">Именит. мн.</td><td class="greek">αυτοί</td><td class="greek">αυτές</td><td class="greek">αυτά</td></tr>
+    <tr><td class="label">Родит. мн.</td><td class="greek">αυτών</td><td class="greek">αυτών</td><td class="greek">αυτών</td></tr>
+    <tr><td class="label">Винит. мн.</td><td class="greek">αυτούς</td><td class="greek">αυτές</td><td class="greek">αυτά</td></tr>
+    </tbody></table>
+    <div class="grammar-note">Используется и как личное ("он/она"), и как указательное ("этот/эта") местоимение.</div>`;
+  }
+  if(word==='εγώ'||word==='εσύ'||word==='εμείς'||word==='εσείς'){
+    return `<div class="grammar-section-title">Личные местоимения</div>
+    <table class="gtable"><thead><tr><th>Лицо</th><th>Именит.</th><th>Родит. (кратк.)</th><th>Винит. (кратк.)</th></tr></thead><tbody>
+    <tr><td class="label">1 ед. (я)</td><td class="greek">εγώ</td><td class="greek">μου</td><td class="greek">με</td></tr>
+    <tr><td class="label">2 ед. (ты)</td><td class="greek">εσύ</td><td class="greek">σου</td><td class="greek">σε</td></tr>
+    <tr><td class="label">3 м. (он)</td><td class="greek">αυτός</td><td class="greek">του</td><td class="greek">τον</td></tr>
+    <tr><td class="label">3 ж. (она)</td><td class="greek">αυτή</td><td class="greek">της</td><td class="greek">τη(ν)</td></tr>
+    <tr><td class="label">1 мн. (мы)</td><td class="greek">εμείς</td><td class="greek">μας</td><td class="greek">μας</td></tr>
+    <tr><td class="label">2 мн. (вы)</td><td class="greek">εσείς</td><td class="greek">σας</td><td class="greek">σας</td></tr>
+    <tr><td class="label">3 мн. (они)</td><td class="greek">αυτοί/ές</td><td class="greek">τους</td><td class="greek">τους</td></tr>
+    </tbody></table>
+    <div class="grammar-note">В греческом местоимение часто опускается, т.к. форма глагола указывает на лицо. Краткие формы ставятся перед глаголом: <em>μου αρέσει</em> (мне нравится), <em>σε αγαπώ</em> (я тебя люблю).</div>`;
+  }
+  return `<div class="grammar-note">Местоимение <strong>${word}</strong> является неизменяемым в данной форме.</div>`;
+}
+
+// ============= AUTO-CONJUGATION ENGINE =============
+// Determines verb type and generates conjugation tables automatically
+
+// AUTO-CONJUGATION ENGINE - see autoConjugate() below after PAST_OVERRIDES
+
+function buildPastStem(verb, stem) {
+  // -εύω → -ευσ (e.g. δουλεύω → δούλεψ... actually δούλεψα)
+  // For simplicity, common patterns:
+  if(verb.endsWith('εύω')) return stem.slice(0,-1) + 'ψ'; // δουλεύω → δούλεψ → no augment needed for illustration
+  if(verb.endsWith('ψω')) return stem; // already has σ
+  if(verb.endsWith('βω') || verb.endsWith('πω') || verb.endsWith('φω')) return stem.slice(0,-1)+'ψ'; // stop+σ=ψ
+  if(verb.endsWith('γω') || verb.endsWith('κω') || verb.endsWith('χω')) return stem.slice(0,-1)+'ξ'; // velar+σ=ξ
+  if(verb.endsWith('ζω')) return stem.slice(0,-1)+'σ'; // ακούω→ άκουσ
+  if(verb.endsWith('ζω')) return stem.slice(0,-1)+'σ';
+  if(verb.endsWith('ουω') || verb==='ακούω') return 'άκουσ'; // special
+  // default: add σ
+  return stem+'σ';
+}
+
+// Special override for ακούω
+const PAST_OVERRIDES = {
+  'ακούω': 'άκουσ',
+  'τρώω': 'έφαγ',
+  'βλέπω': 'είδ',
+  'πίνω': 'ήπι',
+  'μένω': 'έμειν',
+  'κλείνω': 'έκλεισ',
+  'ανοίγω': 'άνοιξ',
+  'φεύγω': 'έφυγ',
+  'περιμένω': 'περίμειν',
+  'παίζω': 'έπαιξ',
+  'διαβάζω': 'διάβασ',
+  'γράφω': 'έγραψ',
+  'πληρώνω': 'πλήρωσ',
+  'καταλαβαίνω': 'κατάλαβ',
+  'αρέσει': null,
+  // -αίνω verbs with suppletive past (-ηκ-)
+  'μπαίνω': 'μπήκ',
+  'βγαίνω': 'βγήκ',
+  'ανεβαίνω': 'ανέβηκ',
+  'κατεβαίνω': 'κατέβηκ',
+  // other irregular pasts
+  'ξέρω': 'ήξερ',
+  'δίνω': 'έδωσ',
+  'κλαίω': 'έκλαψ',
+  'ζω': 'έζησ',
+  'υπάρχει': 'υπήρχ',
+  'παίρνω': 'πήρ',
+  'βάζω': 'έβαλ',
+  'βρίσκω': 'βρήκ',
+  'χάνω': 'έχασ',
+  'αφήνω': 'άφησ',
+  'αλλάζω': 'άλλαξ',
+  'τρέχω': 'έτρεξ',
+  'ξεκινώ': 'ξεκίνησ',  // type2 but needs augment
+};
+
+function buildPastStemSmart(verb, stem) {
+  if(PAST_OVERRIDES.hasOwnProperty(verb)) return PAST_OVERRIDES[verb];
+  return buildPastStem(verb, stem);
+}
+
+function buildFutStem(verb, stem, pastStem) {
+  // For future, strip the augment (initial ε if added)
+  // If past starts with έ/ή (augment), remove it
+  if(pastStem && pastStem.match(/^[έήάίόύώ]/)) {
+    // remove augment: first accented vowel is augment
+    return pastStem.slice(1);
+  }
+  return pastStem || stem+'σ';
+}
+
+function autoDeponent(verb, meaning) {
+  // Deponent verbs: έρχομαι, σκέφτομαι, αισθάνομαι, χρειάζομαι
+  const DEPONENT_TABLES = {
+    'κάθομαι': {
+      pres:[
+        {p:'εγώ',el:'κάθομαι'},{p:'εσύ',el:'κάθεσαι'},{p:'αυτός/ή/ό',el:'κάθεται'},
+        {p:'εμείς',el:'καθόμαστε'},{p:'εσείς',el:'κάθεστε'},{p:'αυτοί/ές/ά',el:'κάθονται'},
+      ],
+      past:[
+        {p:'εγώ',el:'κάθισα'},{p:'εσύ',el:'κάθισες'},{p:'αυτός/ή/ό',el:'κάθισε'},
+        {p:'εμείς',el:'καθίσαμε'},{p:'εσείς',el:'καθίσατε'},{p:'αυτοί/ές/ά',el:'κάθισαν'},
+      ],
+      fut:[
+        {p:'εγώ',el:'θα καθίσω'},{p:'εσύ',el:'θα καθίσεις'},{p:'αυτός/ή/ό',el:'θα καθίσει'},
+        {p:'εμείς',el:'θα καθίσουμε'},{p:'εσείς',el:'θα καθίσετε'},{p:'αυτοί/ές/ά',el:'θα καθίσουν'},
+      ],
+      note:'Деп. глагол "сидеть / садиться". Прошедшее: κάθισα.',
+    },
+    'έρχομαι': {
+      pres:[
+        {p:'εγώ',el:'έρχομαι'},{p:'εσύ',el:'έρχεσαι'},{p:'αυτός/ή/ό',el:'έρχεται'},
+        {p:'εμείς',el:'ερχόμαστε'},{p:'εσείς',el:'έρχεστε'},{p:'αυτοί/ές/ά',el:'έρχονται'},
+      ],
+      past:[
+        {p:'εγώ',el:'ήρθα'},{p:'εσύ',el:'ήρθες'},{p:'αυτός/ή/ό',el:'ήρθε'},
+        {p:'εμείς',el:'ήρθαμε'},{p:'εσείς',el:'ήρθατε'},{p:'αυτοί/ές/ά',el:'ήρθαν'},
+      ],
+      fut:[
+        {p:'εγώ',el:'θα έρθω'},{p:'εσύ',el:'θα έρθεις'},{p:'αυτός/ή/ό',el:'θα έρθει'},
+        {p:'εμείς',el:'θα έρθουμε'},{p:'εσείς',el:'θα έρθετε'},{p:'αυτοί/ές/ά',el:'θα έρθουν'},
+      ],
+      note:'Глагол-депонент. Форма пассивная, но значение активное. Прошедшее — неправильное.'
+    },
+    'σκέφτομαι': {
+      pres:[
+        {p:'εγώ',el:'σκέφτομαι'},{p:'εσύ',el:'σκέφτεσαι'},{p:'αυτός/ή/ό',el:'σκέφτεται'},
+        {p:'εμείς',el:'σκεφτόμαστε'},{p:'εσείς',el:'σκέφτεστε'},{p:'αυτοί/ές/ά',el:'σκέφτονται'},
+      ],
+      past:[
+        {p:'εγώ',el:'σκέφτηκα'},{p:'εσύ',el:'σκέφτηκες'},{p:'αυτός/ή/ό',el:'σκέφτηκε'},
+        {p:'εμείς',el:'σκεφτήκαμε'},{p:'εσείς',el:'σκεφτήκατε'},{p:'αυτοί/ές/ά',el:'σκέφτηκαν'},
+      ],
+      fut:[
+        {p:'εγώ',el:'θα σκεφτώ'},{p:'εσύ',el:'θα σκεφτείς'},{p:'αυτός/ή/ό',el:'θα σκεφτεί'},
+        {p:'εμείς',el:'θα σκεφτούμε'},{p:'εσείς',el:'θα σκεφτείτε'},{p:'αυτοί/ές/ά',el:'θα σκεφτούν'},
+      ],
+      note:'Глагол-депонент (пассивная форма, активное значение). Прошедшее на -θηκα.'
+    },
+    'αισθάνομαι': {
+      pres:[
+        {p:'εγώ',el:'αισθάνομαι'},{p:'εσύ',el:'αισθάνεσαι'},{p:'αυτός/ή/ό',el:'αισθάνεται'},
+        {p:'εμείς',el:'αισθανόμαστε'},{p:'εσείς',el:'αισθάνεστε'},{p:'αυτοί/ές/ά',el:'αισθάνονται'},
+      ],
+      past:[
+        {p:'εγώ',el:'αισθάνθηκα'},{p:'εσύ',el:'αισθάνθηκες'},{p:'αυτός/ή/ό',el:'αισθάνθηκε'},
+        {p:'εμείς',el:'αισθανθήκαμε'},{p:'εσείς',el:'αισθανθήκατε'},{p:'αυτοί/ές/ά',el:'αισθάνθηκαν'},
+      ],
+      fut:[
+        {p:'εγώ',el:'θα αισθανθώ'},{p:'εσύ',el:'θα αισθανθείς'},{p:'αυτός/ή/ό',el:'θα αισθανθεί'},
+        {p:'εμείς',el:'θα αισθανθούμε'},{p:'εσείς',el:'θα αισθανθείτε'},{p:'αυτοί/ές/ά',el:'θα αισθανθούν'},
+      ],
+      note:'Глагол-депонент. Прошедшее на -θηκα.'
+    },
+    'χρειάζομαι': {
+      pres:[
+        {p:'εγώ',el:'χρειάζομαι'},{p:'εσύ',el:'χρειάζεσαι'},{p:'αυτός/ή/ό',el:'χρειάζεται'},
+        {p:'εμείς',el:'χρειαζόμαστε'},{p:'εσείς',el:'χρειάζεστε'},{p:'αυτοί/ές/ά',el:'χρειάζονται'},
+      ],
+      past:[
+        {p:'εγώ',el:'χρειάστηκα'},{p:'εσύ',el:'χρειάστηκες'},{p:'αυτός/ή/ό',el:'χρειάστηκε'},
+        {p:'εμείς',el:'χρειαστήκαμε'},{p:'εσείς',el:'χρειαστήκατε'},{p:'αυτοί/ές/ά',el:'χρειάστηκαν'},
+      ],
+      fut:[
+        {p:'εγώ',el:'θα χρειαστώ'},{p:'εσύ',el:'θα χρειαστείς'},{p:'αυτός/ή/ό',el:'θα χρειαστεί'},
+        {p:'εμείς',el:'θα χρειαστούμε'},{p:'εσείς',el:'θα χρειαστείτε'},{p:'αυτοί/ές/ά',el:'θα χρειαστούν'},
+      ],
+      note:'Глагол-депонент. Часто используется безлично: χρειάζεται (нужно).'
+    },
+    'θυμάμαι': {
+      pres:[
+        {p:'εγώ',el:'θυμάμαι'},{p:'εσύ',el:'θυμάσαι'},{p:'αυτός/ή/ό',el:'θυμάται'},
+        {p:'εμείς',el:'θυμόμαστε'},{p:'εσείς',el:'θυμάστε'},{p:'αυτοί/ές/ά',el:'θυμούνται'},
+      ],
+      past:[
+        {p:'εγώ',el:'θυμήθηκα'},{p:'εσύ',el:'θυμήθηκες'},{p:'αυτός/ή/ό',el:'θυμήθηκε'},
+        {p:'εμείς',el:'θυμηθήκαμε'},{p:'εσείς',el:'θυμηθήκατε'},{p:'αυτοί/ές/ά',el:'θυμήθηκαν'},
+      ],
+      fut:[
+        {p:'εγώ',el:'θα θυμηθώ'},{p:'εσύ',el:'θα θυμηθείς'},{p:'αυτός/ή/ό',el:'θα θυμηθεί'},
+        {p:'εμείς',el:'θα θυμηθούμε'},{p:'εσείς',el:'θα θυμηθείτε'},{p:'αυτοί/ές/ά',el:'θα θυμηθούν'},
+      ],
+      note:'Глагол-депонент "помнить". Прошедшее: θυμήθηκα.',
+    },
+    'κοιμάμαι': {
+      pres:[
+        {p:'εγώ',el:'κοιμάμαι'},{p:'εσύ',el:'κοιμάσαι'},{p:'αυτός/ή/ό',el:'κοιμάται'},
+        {p:'εμείς',el:'κοιμόμαστε'},{p:'εσείς',el:'κοιμάστε'},{p:'αυτοί/ές/ά',el:'κοιμούνται'},
+      ],
+      past:[
+        {p:'εγώ',el:'κοιμήθηκα'},{p:'εσύ',el:'κοιμήθηκες'},{p:'αυτός/ή/ό',el:'κοιμήθηκε'},
+        {p:'εμείς',el:'κοιμηθήκαμε'},{p:'εσείς',el:'κοιμηθήκατε'},{p:'αυτοί/ές/ά',el:'κοιμήθηκαν'},
+      ],
+      fut:[
+        {p:'εγώ',el:'θα κοιμηθώ'},{p:'εσύ',el:'θα κοιμηθείς'},{p:'αυτός/ή/ό',el:'θα κοιμηθεί'},
+        {p:'εμείς',el:'θα κοιμηθούμε'},{p:'εσείς',el:'θα κοιμηθείτε'},{p:'αυτοί/ές/ά',el:'θα κοιμηθούν'},
+      ],
+      note:'Глагол-депонент "спать". Прошедшее: κοιμήθηκα.',
+    },
+    'φοβάμαι': {
+      pres:[
+        {p:'εγώ',el:'φοβάμαι'},{p:'εσύ',el:'φοβάσαι'},{p:'αυτός/ή/ό',el:'φοβάται'},
+        {p:'εμείς',el:'φοβόμαστε'},{p:'εσείς',el:'φοβάστε'},{p:'αυτοί/ές/ά',el:'φοβούνται'},
+      ],
+      past:[
+        {p:'εγώ',el:'φοβήθηκα'},{p:'εσύ',el:'φοβήθηκες'},{p:'αυτός/ή/ό',el:'φοβήθηκε'},
+        {p:'εμείς',el:'φοβηθήκαμε'},{p:'εσείς',el:'φοβηθήκατε'},{p:'αυτοί/ές/ά',el:'φοβήθηκαν'},
+      ],
+      fut:[
+        {p:'εγώ',el:'θα φοβηθώ'},{p:'εσύ',el:'θα φοβηθείς'},{p:'αυτός/ή/ό',el:'θα φοβηθεί'},
+        {p:'εμείς',el:'θα φοβηθούμε'},{p:'εσείς',el:'θα φοβηθείτε'},{p:'αυτοί/ές/ά',el:'θα φοβηθούν'},
+      ],
+      note:'Глагол-депонент "бояться". Прошедшее: φοβήθηκα.',
+    },
+  };
+
+  const d = DEPONENT_TABLES[verb];
+  if(!d) return autoConjugate(verb, meaning);
+
+  const tenses = {'Настоящее': d.pres, 'Прошедшее': d.past, 'Будущее': d.fut};
+  const tNames = Object.keys(tenses);
+  if(!grammarTab||!tNames.includes(grammarTab)) grammarTab=tNames[0];
+
+  let html = `<div class="grammar-note" style="margin-bottom:12px;font-size:0.8rem;border-color:rgba(201,168,76,0.25);background:rgba(201,168,76,0.05);color:var(--gold-light)">
+    Глагол-депонент &nbsp;·&nbsp; Пассивная форма, активное значение
+  </div>`;
+
+  html += `<div class="tab-row">`;
+  tNames.forEach(t => {
+    html += `<button class="tab-btn${t===grammarTab?' active':''}" onclick="switchTab('${t}')">${t}</button>`;
+  });
+  html += `</div>`;
+
+  tNames.forEach(t => {
+    const rows = tenses[t];
+    const id = 'gtab_'+t.replace(/[^a-zA-Zа-яА-Я]/g,'_');
+    html += `<div id="${id}" style="display:${t===grammarTab?'block':'none'}">`;
+    html += `<table class="gtable"><thead><tr><th>Лицо</th><th>Форма</th></tr></thead><tbody>`;
+    rows.forEach(r => {
+      html += `<tr><td class="label">${r.p}</td><td class="greek">${r.el||r.f||''}</td></tr>`;
+    });
+    html += `</tbody></table></div>`;
+  });
+
+  if(d.note) html += `<div class="grammar-note" style="margin-top:10px">${d.note}</div>`;
+  return html;
+}
+
+// ============= AUTO-CONJUGATION ENGINE =============
+function autoConjugate(verb, meaning) {
+  // Special case: αρέσει is impersonal
+  if(verb === 'αρέσει') {
+    return `<div class="grammar-note" style="margin-bottom:10px">
+      <strong>αρέσει</strong> — безличный глагол "нравиться".<br>
+      Используется всегда в 3-м лице вместе с датив. местоимением:
+    </div>
+    <table class="gtable"><thead><tr><th>Кому</th><th>Ед. ч. (нравится)</th><th>Мн. ч. (нравятся)</th></tr></thead><tbody>
+    <tr><td class="label">мне</td><td class="greek">μου αρέσει</td><td class="greek">μου αρέσουν</td></tr>
+    <tr><td class="label">тебе</td><td class="greek">σου αρέσει</td><td class="greek">σου αρέσουν</td></tr>
+    <tr><td class="label">ему/ей</td><td class="greek">του/της αρέσει</td><td class="greek">του/της αρέσουν</td></tr>
+    <tr><td class="label">нам</td><td class="greek">μας αρέσει</td><td class="greek">μας αρέσουν</td></tr>
+    <tr><td class="label">вам</td><td class="greek">σας αρέσει</td><td class="greek">σας αρέσουν</td></tr>
+    <tr><td class="label">им</td><td class="greek">τους αρέσει</td><td class="greek">τους αρέσουν</td></tr>
+    </tbody></table>
+    <div class="grammar-note" style="margin-top:8px">Прошедшее: <em>μου άρεσε</em> (мне понравилось). Будущее: <em>θα μου αρέσει</em>.</div>`;
+  }
+
+  const isType2 = /[ώ]$/.test(verb);
+  const isDeponent = /(ομαι|άμαι|ιέμαι|ούμαι)$/.test(verb);
+
+  if(isDeponent) return autoDeponent(verb, meaning);
+
+  let stem, pres, past, fut, typeLabel;
+
+  const pastOverride = PAST_OVERRIDES.hasOwnProperty(verb) ? PAST_OVERRIDES[verb] : undefined;
+
+  if(isType2) {
+    stem = verb.slice(0,-1);
+    typeLabel = 'Тип 2 (-ώ/-άς/-ά)';
+    pres = [
+      {p:'εγώ',       f:stem+'ώ'},
+      {p:'εσύ',       f:stem+'άς'},
+      {p:'αυτός/ή/ό', f:stem+'ά'},
+      {p:'εμείς',     f:stem+'άμε'},
+      {p:'εσείς',     f:stem+'άτε'},
+      {p:'αυτοί/ές/ά',f:stem+'άνε'},
+    ];
+    past=[
+      {p:'εγώ',       f:stem+'ησα'},
+      {p:'εσύ',       f:stem+'ησες'},
+      {p:'αυτός/ή/ό', f:stem+'ησε'},
+      {p:'εμείς',     f:stem+'ήσαμε'},
+      {p:'εσείς',     f:stem+'ήσατε'},
+      {p:'αυτοί/ές/ά',f:stem+'ησαν'},
+    ];
+    fut=[
+      {p:'εγώ',       f:'θα '+stem+'ήσω'},
+      {p:'εσύ',       f:'θα '+stem+'ήσεις'},
+      {p:'αυτός/ή/ό', f:'θα '+stem+'ήσει'},
+      {p:'εμείς',     f:'θα '+stem+'ήσουμε'},
+      {p:'εσείς',     f:'θα '+stem+'ήσετε'},
+      {p:'αυτοί/ές/ά',f:'θα '+stem+'ήσουν'},
+    ];
+  } else {
+    stem = verb.slice(0,-1);
+    typeLabel = 'Тип 1 (-ω/-εις/-ει)';
+    pres=[
+      {p:'εγώ',       f:stem+'ω'},
+      {p:'εσύ',       f:stem+'εις'},
+      {p:'αυτός/ή/ό', f:stem+'ει'},
+      {p:'εμείς',     f:stem+'ουμε'},
+      {p:'εσείς',     f:stem+'ετε'},
+      {p:'αυτοί/ές/ά',f:stem+'ουν'},
+    ];
+
+    let ps = pastOverride !== undefined ? pastOverride : buildPastStem(verb, stem);
+    let fs = ps ? buildFutStem(verb, stem, ps) : stem+'σ';
+
+    past=[
+      {p:'εγώ',       f:ps+'α'},
+      {p:'εσύ',       f:ps+'ες'},
+      {p:'αυτός/ή/ό', f:ps+'ε'},
+      {p:'εμείς',     f:ps+'αμε'},
+      {p:'εσείς',     f:ps+'ατε'},
+      {p:'αυτοί/ές/ά',f:ps+'αν'},
+    ];
+    fut=[
+      {p:'εγώ',       f:'θα '+fs+'ω'},
+      {p:'εσύ',       f:'θα '+fs+'εις'},
+      {p:'αυτός/ή/ό', f:'θα '+fs+'ει'},
+      {p:'εμείς',     f:'θα '+fs+'ουμε'},
+      {p:'εσείς',     f:'θα '+fs+'ετε'},
+      {p:'αυτοί/ές/ά',f:'θα '+fs+'ουν'},
+    ];
+  }
+
+  const tenses={'Настоящее':pres,'Прошедшее':past,'Будущее':fut};
+  const tNames=Object.keys(tenses);
+  if(!grammarTab||!tNames.includes(grammarTab)) grammarTab=tNames[0];
+
+  let html=`<div class="grammar-note" style="margin-bottom:12px;font-size:0.8rem;border-color:rgba(201,168,76,0.25);background:rgba(201,168,76,0.05);color:var(--gold-light)">
+    ${typeLabel} &nbsp;·&nbsp; Будущее = <strong>θα</strong> + форма аориста
+  </div>`;
+
+  html+=`<div class="tab-row">`;
+  tNames.forEach(t=>{
+    html+=`<button class="tab-btn${t===grammarTab?' active':''}" onclick="switchTab('${t}')">${t}</button>`;
+  });
+  html+=`</div>`;
+
+  tNames.forEach(t=>{
+    const rows=tenses[t];
+    const id='gtab_'+t.replace(/[^a-zA-Zа-яА-Я]/g,'_');
+    html+=`<div id="${id}" style="display:${t===grammarTab?'block':'none'}">`;
+    html+=`<table class="gtable"><thead><tr><th>Лицо</th><th>Форма</th></tr></thead><tbody>`;
+    rows.forEach(r=>{
+      html+=`<tr><td class="label">${r.p}</td><td class="greek">${r.f}</td></tr>`;
+    });
+    html+=`</tbody></table></div>`;
+  });
+
+  // Classify: truly irregular (past unrelated to present) vs regular stem change
+  const TRULY_IRREGULAR = new Set(['τρώω','βλέπω','πίνω','μένω','περιμένω','καταλαβαίνω']);
+
+  const isOverride = PAST_OVERRIDES.hasOwnProperty(verb);
+  if (isOverride && TRULY_IRREGULAR.has(verb)) {
+    html+=`<div class="grammar-note" style="margin-top:10px">⚠️ <strong>Неправильный аорист</strong> — прошедшее время не выводится из настоящего, нужно запомнить отдельно.</div>`;
+  } else if (isOverride) {
+    html+=`<div class="grammar-note" style="margin-top:10px">ℹ️ Основа аориста изменяется по фонетическому правилу (показана точная форма).</div>`;
+  } else if (!isType2) {
+    html+=`<div class="grammar-note" style="margin-top:10px">Прошедшее приближённое — построено по стандартным правилам. Может незначительно отличаться.</div>`;
+  }
+
+  return html;
+}
+
+init();
+</script>
+</body>
+</html>
