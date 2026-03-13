@@ -103,15 +103,9 @@ function renderBank() {
     el.textContent=bw.word;
     if (exhausted) el.classList.add('used');
     if (checked && bw.checkState) el.classList.add('chip-'+bw.checkState);
-    el.addEventListener('click', ()=>{
-      if (exhausted) {
-        // Remove one instance of this word from slots (first non-locked)
-        const si=slots.findIndex(s=>s.word===bw.word&&!s.locked);
-        if (si!==-1) removeSlot(si);
-      } else {
-        addWord(bw.word);
-      }
-    });
+    if (!exhausted) {
+      el.addEventListener('click', ()=>addWord(bw.word));
+    }
     c.appendChild(el);
   });
 }
@@ -143,6 +137,9 @@ function checkAnswer() {
   if (slots.every(s=>s.word===null)) return;
   checked=true;
 
+  // Save previously yellowed chips before reset (misplaced state must not go back to gray)
+  const prevMisplaced = new Set(bank.filter(bw=>bw.checkState==='misplaced').map(bw=>bw.word));
+
   // Reset checkStates on bank before recomputing
   bank.forEach(bw=>bw.checkState=null);
 
@@ -163,6 +160,11 @@ function checkAnswer() {
       if (!bw.checkState || rank[slot.checkState]>rank[bw.checkState])
         bw.checkState=slot.checkState;
     }
+  });
+
+  // Restore yellow for chips that were previously misplaced but not in slots now
+  bank.forEach(bw=>{
+    if (!bw.checkState && prevMisplaced.has(bw.word)) bw.checkState='misplaced';
   });
 
   const allOk = slots.length===ex.answer.length &&
