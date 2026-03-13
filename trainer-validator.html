@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Валидатор упражнений</title>
+<style>
+  :root {
+    --bg: #0f0f12;
+    --surface: #1a1a20;
+    --border: #2a2a35;
+    --text: #e2e2e8;
+    --muted: #6b6b7a;
+    --green: #4ade80;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --blue: #60a5fa;
+    --orange: #fb923c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 24px;
+    min-height: 100vh;
+  }
+  h1 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--blue);
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 24px;
+  }
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    text-align: center;
+  }
+  .stat-num {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .ok .stat-num { color: var(--green); }
+  .warn .stat-num { color: var(--yellow); }
+  .err .stat-num { color: var(--red); }
+  .total .stat-num { color: var(--blue); }
+
+  .section { margin-bottom: 28px; }
+  .section-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+    margin-bottom: 12px;
+  }
+  .issue {
+    background: var(--surface);
+    border-left: 3px solid var(--border);
+    border-radius: 0 6px 6px 0;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+  .issue.error { border-left-color: var(--red); }
+  .issue.warn { border-left-color: var(--yellow); }
+  .issue.info { border-left-color: var(--blue); }
+  .issue-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .badge.error { background: #f871711a; color: var(--red); }
+  .badge.warn  { background: #fbbf241a; color: var(--yellow); }
+  .badge.info  { background: #60a5fa1a; color: var(--blue); }
+  .ex-idx { color: var(--muted); font-size: 11px; }
+  .ex-ru { color: var(--text); }
+  .detail { color: var(--muted); margin-top: 4px; }
+  .detail code { color: var(--orange); background: #fb923c12; padding: 1px 4px; border-radius: 3px; }
+  .all-ok {
+    text-align: center;
+    padding: 40px;
+    color: var(--green);
+    font-size: 16px;
+  }
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 5px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    transition: all 0.15s;
+  }
+  .filter-btn.active { border-color: var(--blue); color: var(--blue); }
+  .filter-btn:hover { border-color: var(--text); color: var(--text); }
+  .collapse-btn {
+    background: none;
+    border: none;
+    color: var(--blue);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    padding: 0;
+    margin-left: auto;
+  }
+</style>
+</head>
+<body>
+
+<h1>▸ ВАЛИДАТОР УПРАЖНЕНИЙ</h1>
+<div class="subtitle">trainer-data.js — автопроверка по правилам файла</div>
+
+<div id="app">Загрузка...</div>
+
+<!-- Встроенные данные из trainer-data.js -->
+<script>
+// ================================================================
+// КОПИЯ EXERCISES ИЗ trainer-data.js
+// При обновлении trainer-data.js — вставить новый массив сюда
+// ================================================================
+</script>
+<script src="trainer-data.js"></script>
+<script>
+// ================================================================
+// ВАЛИДАТОР
+// ================================================================
+
+function validate(exercises) {
+  const issues = [];
+  const add = (type, idx, ru, msg, detail) => issues.push({ type, idx, ru, msg, detail });
+
+  exercises.forEach((ex, i) => {
+    const n = i + 1;
+    const label = `#${n}`;
+
+    // --- Обязательные поля ---
+    if (!ex.ru)     add('error', n, '', 'Отсутствует поле ru', null);
+    if (!ex.answer || !Array.isArray(ex.answer) || ex.answer.length === 0)
+      add('error', n, ex.ru, 'Отсутствует или пустой answer', null);
+    if (!ex.words  || !Array.isArray(ex.words) || ex.words.length === 0)
+      add('error', n, ex.ru, 'Отсутствует или пустой words', null);
+    if (!ex.hint)
+      add('warn', n, ex.ru, 'Отсутствует hint', null);
+    if (!ex.punct || typeof ex.punct !== 'object')
+      add('warn', n, ex.ru, 'Отсутствует punct', null);
+
+    if (!ex.answer || !ex.words) return;
+
+    // --- Все слова answer должны быть в words ---
+    const wordsCopy = [...ex.words];
+    const missing = [];
+    for (const w of ex.answer) {
+      const idx2 = wordsCopy.indexOf(w);
+      if (idx2 === -1) {
+        missing.push(w);
+      } else {
+        wordsCopy.splice(idx2, 1);
+      }
+    }
+    if (missing.length > 0) {
+      add('error', n, ex.ru,
+        'Слова из answer отсутствуют в words',
+        `Отсутствуют: ${missing.map(w => `<code>${w}</code>`).join(', ')}`);
+    }
+
+    // --- Слова с знаками препинания внутри ---
+    [...ex.answer, ...ex.words].forEach(w => {
+      if (/[.,;!?]/.test(w)) {
+        add('error', n, ex.ru,
+          'Знак препинания внутри слова',
+          `<code>${w}</code> — знаки только в punct`);
+      }
+    });
+
+    // --- Дистракторов не менее 1 ---
+    const extraInWords = ex.words.length - ex.answer.length;
+    if (extraInWords < 1) {
+      add('warn', n, ex.ru,
+        'Слишком мало дистракторов',
+        `В words ${ex.words.length} слов, в answer ${ex.answer.length} — нет дистракторов`);
+    }
+    if (extraInWords > 7) {
+      add('info', n, ex.ru,
+        'Очень много дистракторов',
+        `${extraInWords} лишних слов — рекомендуется 2–4`);
+    }
+
+    // --- Длина answer ---
+    if (ex.answer.length > 9) {
+      add('info', n, ex.ru,
+        'Длинное упражнение',
+        `${ex.answer.length} слов в answer — рекомендуется ≤8`);
+    }
+
+    // --- punct: end обязателен ---
+    if (ex.punct && !ex.punct.end) {
+      add('warn', n, ex.ru,
+        'punct не содержит end',
+        'Нет финального знака препинания');
+    }
+
+    // --- punct: индексы не выходят за bounds ---
+    if (ex.punct) {
+      Object.keys(ex.punct).forEach(k => {
+        if (k === 'end') return;
+        const pidx = parseInt(k);
+        if (isNaN(pidx) || pidx >= ex.answer.length) {
+          add('error', n, ex.ru,
+            `Индекс punct[${k}] выходит за пределы answer`,
+            `answer.length = ${ex.answer.length}, индекс = ${pidx}`);
+        }
+      });
+    }
+
+    // --- Дубликаты в words без соответствия в answer ---
+    const answerCount = {};
+    ex.answer.forEach(w => answerCount[w] = (answerCount[w] || 0) + 1);
+    const wordsCount = {};
+    ex.words.forEach(w => wordsCount[w] = (wordsCount[w] || 0) + 1);
+    Object.entries(wordsCount).forEach(([w, cnt]) => {
+      const need = answerCount[w] || 0;
+      if (cnt > need + 3) {
+        add('info', n, ex.ru,
+          'Необычно много копий слова в words',
+          `<code>${w}</code> встречается ${cnt} раз, в answer — ${need}`);
+      }
+    });
+
+    // --- Проверка mojibake в греческом тексте ---
+    const allGreek = [...ex.answer, ...ex.words, ex.hint || ''];
+    allGreek.forEach(s => {
+      // Признак mojibake: латинские символы с высокими кодами (ÃÎÏ) вместо греческих
+      if (/[ÃÎÏÂÄÅæø]/.test(s)) {
+        add('error', n, ex.ru,
+          'Возможный mojibake в тексте',
+          `<code>${s}</code> — похоже на битую кодировку`);
+      }
+    });
+
+    // --- hint должен содержать греческий текст ---
+    if (ex.hint && !/[\u0370-\u03FF]/.test(ex.hint)) {
+      add('info', n, ex.ru,
+        'hint не содержит греческого текста',
+        'Рекомендуется включить греческую форму для наглядности');
+    }
+  });
+
+  // --- Похожие упражнения (попарное сравнение ru-строк) ---
+  function ruWords(ru) {
+    return new Set(ru.toLowerCase().replace(/[.,;!?()—]/g, '').split(/\s+/).filter(Boolean));
+  }
+  function similarity(a, b) {
+    const wa = ruWords(a);
+    const wb = ruWords(b);
+    const common = [...wa].filter(w => wb.has(w)).length;
+    const union = new Set([...wa, ...wb]).size;
+    return union === 0 ? 0 : common / union;
+  }
+  for (let i = 0; i < exercises.length; i++) {
+    for (let j = i + 1; j < exercises.length; j++) {
+      const a = exercises[i], b = exercises[j];
+      if (!a.ru || !b.ru) continue;
+      const sim = similarity(a.ru, b.ru);
+      if (sim >= 1) {
+        add('error', i + 1, a.ru,
+          `Полный дубль упражнения #${j + 1}`,
+          `<code>${b.ru}</code>`);
+      } else if (sim >= 0.7) {
+        const pct = Math.round(sim * 100);
+        add('warn', i + 1, a.ru,
+          `Похоже на упражнение #${j + 1} (${pct}% слов совпадает)`,
+          `<code>${b.ru}</code>`);
+      }
+    }
+  }
+
+  return issues;
+}
+
+// ================================================================
+// RENDER
+// ================================================================
+
+function render() {
+  const app = document.getElementById('app');
+
+  if (typeof EXERCISES === 'undefined') {
+    app.innerHTML = `<div class="issue error">
+      <div class="issue-head"><span class="badge error">ошибка</span> <span class="ex-ru">EXERCISES не найден</span></div>
+      <div class="detail">Убедитесь что trainer-data.js подключён к странице</div>
+    </div>`;
+    return;
+  }
+
+  const issues = validate(EXERCISES);
+  const errors = issues.filter(i => i.type === 'error');
+  const warns  = issues.filter(i => i.type === 'warn');
+  const infos  = issues.filter(i => i.type === 'info');
+
+  let current = 'all';
+
+  function filterIssues(type) {
+    if (type === 'all') return issues;
+    return issues.filter(i => i.type === type);
+  }
+
+  function renderIssues(list) {
+    if (list.length === 0) {
+      return `<div class="all-ok">✓ Нет проблем в этой категории</div>`;
+    }
+    return list.map(issue => `
+      <div class="issue ${issue.type}">
+        <div class="issue-head">
+          <span class="badge ${issue.type}">${issue.type === 'error' ? 'ошибка' : issue.type === 'warn' ? 'предупреждение' : 'инфо'}</span>
+          <span class="ex-idx">#${issue.idx}</span>
+          <span class="ex-ru">${issue.ru || '—'}</span>
+        </div>
+        <div>${issue.msg}</div>
+        ${issue.detail ? `<div class="detail">${issue.detail}</div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  function fullHTML() {
+    const active = filterIssues(current);
+    return `
+      <div class="summary">
+        <div class="stat total"><div class="stat-num">${EXERCISES.length}</div><div class="stat-label">упражнений</div></div>
+        <div class="stat ${errors.length === 0 ? 'ok' : 'err'}"><div class="stat-num">${errors.length}</div><div class="stat-label">ошибок</div></div>
+        <div class="stat ${warns.length === 0 ? 'ok' : 'warn'}"><div class="stat-num">${warns.length}</div><div class="stat-label">предупреждений</div></div>
+        <div class="stat info"><div class="stat-num">${infos.length}</div><div class="stat-label">заметок</div></div>
+      </div>
+
+      ${issues.length === 0 ? `<div class="all-ok">✓ Все ${EXERCISES.length} упражнений прошли проверку</div>` : `
+        <div class="filter-bar">
+          <button class="filter-btn ${current === 'all'   ? 'active' : ''}" onclick="setFilter('all')">Все (${issues.length})</button>
+          <button class="filter-btn ${current === 'error' ? 'active' : ''}" onclick="setFilter('error')">Ошибки (${errors.length})</button>
+          <button class="filter-btn ${current === 'warn'  ? 'active' : ''}" onclick="setFilter('warn')">Предупреждения (${warns.length})</button>
+          <button class="filter-btn ${current === 'info'  ? 'active' : ''}" onclick="setFilter('info')">Заметки (${infos.length})</button>
+        </div>
+        <div class="section">
+          <div id="issues-list">${renderIssues(active)}</div>
+        </div>
+      `}
+    `;
+  }
+
+  window.setFilter = function(type) {
+    current = type;
+    document.querySelectorAll('.filter-btn').forEach(b => {
+      b.classList.toggle('active', b.textContent.startsWith(
+        type === 'all' ? 'Все' : type === 'error' ? 'Ошибки' : type === 'warn' ? 'Предупреждения' : 'Заметки'
+      ));
+    });
+    document.getElementById('issues-list').innerHTML = renderIssues(filterIssues(type));
+  };
+
+  app.innerHTML = fullHTML();
+}
+
+document.addEventListener('DOMContentLoaded', render);
+// Если DOMContentLoaded уже сработал
+if (document.readyState !== 'loading') render();
+</script>
+</body>
+</html>

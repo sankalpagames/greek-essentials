@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Greek Grammar Trainer</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0e0c1a; --surface:#16132a; --card-bg:#1e1a35;
+  --gold:#c9a84c; --gold-light:#e8c97a; --marble:#f0ece0;
+  --text:#e8e4d8; --muted:#7a7090;
+  --green:#4caf7a; --red:#e05a5a; --orange:#e09a3a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px 60px;background-image:radial-gradient(ellipse at 20% 20%,rgba(100,80,180,.12) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(60,40,120,.1) 0%,transparent 50%)}
+.header{width:100%;max-width:720px;display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+h1{font-family:'Noto Serif',serif;font-size:clamp(1.4rem,4vw,2rem);color:var(--gold);letter-spacing:.04em}
+.btn-reset{background:none;border:1px solid #3a3560;color:var(--muted);font-family:'Crimson Pro',serif;font-size:.82rem;padding:3px 10px;border-radius:4px;cursor:pointer;transition:color .2s,border-color .2s}
+.btn-reset:hover{color:var(--red);border-color:var(--red)}
+.progress-wrap{width:100%;max-width:720px;margin-bottom:28px}
+.progress-meta{display:flex;justify-content:space-between;font-size:.82rem;color:var(--muted);margin-bottom:6px}
+.progress-bar{height:3px;background:#2a2548;border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-light));border-radius:2px;transition:width .5s ease}
+.card{width:100%;max-width:720px;background:var(--card-bg);border:1px solid #2e2a50;border-radius:12px;padding:28px 28px 24px;box-shadow:0 8px 40px rgba(0,0,0,.4)}
+.exercise-label{font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.ru-sentence{font-family:'Noto Serif',serif;font-size:clamp(1.1rem,3vw,1.4rem);color:var(--marble);line-height:1.5;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid #2a2548}
+.section-label{font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.slots{display:flex;flex-wrap:wrap;gap:8px;min-height:52px;padding:10px 12px;background:#0e0c1a;border:1px solid #3a3560;border-radius:8px;margin-bottom:24px;align-items:center}
+.slot-token{display:inline-flex;align-items:center;padding:6px 14px;background:#1e1a35;border:1px solid #3a3560;border-radius:6px;font-size:1.05rem;font-family:'Noto Serif',serif;user-select:none;transition:background .15s,border-color .15s}
+.slot-token.removable{cursor:pointer}
+.slot-token.removable:hover{background:#252040;border-color:var(--gold)}
+.slot-token.empty{width:64px;height:36px;background:transparent;border:1px dashed #3a3560;cursor:default}
+.slot-token.punct{background:transparent;border-color:transparent;color:var(--muted);padding:6px 4px;cursor:default}
+.slot-token.correct{background:rgba(76,175,122,.18);border-color:var(--green);color:var(--green);cursor:default}
+.slot-token.wrong{background:rgba(224,90,90,.18);border-color:var(--red);color:var(--red)}
+.slot-token.misplaced{background:rgba(224,154,58,.18);border-color:var(--orange);color:var(--orange)}
+.word-bank{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}
+.word-chip{display:inline-flex;align-items:center;padding:7px 16px;background:var(--surface);border:1px solid #3a3560;border-radius:20px;font-size:1.05rem;font-family:'Noto Serif',serif;cursor:pointer;user-select:none;transition:background .15s,border-color .15s,transform .1s}
+.word-chip:hover:not(.used){background:#1e1a35;border-color:var(--gold);transform:translateY(-1px)}
+.word-chip.used{opacity:.38}
+.word-chip.used:hover{opacity:.55;transform:none;border-color:#3a3560}
+.word-chip.chip-correct{border-color:var(--green);color:var(--green)}
+.word-chip.chip-wrong{border-color:var(--red);color:var(--red)}
+.word-chip.chip-misplaced{border-color:var(--orange);color:var(--orange)}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn{padding:10px 24px;border-radius:6px;font-family:'Crimson Pro',serif;font-size:1rem;cursor:pointer;border:none;transition:opacity .2s,transform .1s}
+.btn:hover{opacity:.88;transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn-check{background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#0e0c1a;font-weight:600}
+.btn-clear{background:transparent;border:1px solid #3a3560;color:var(--muted)}
+.btn-clear:hover{border-color:var(--muted);color:var(--text)}.btn-check:disabled{opacity:.35;cursor:default;transform:none}
+.btn-next{background:linear-gradient(135deg,#4caf7a,#3d9968);color:#0e0c1a;font-weight:600;display:none}
+.success-msg{display:none;margin-top:18px;padding:14px 18px;background:rgba(76,175,122,.12);border:1px solid rgba(76,175,122,.35);border-radius:8px;color:var(--green);font-size:1rem;line-height:1.6}
+.success-msg.show{display:block}
+.success-msg .el-answer{font-family:'Noto Serif',serif;font-size:1.1rem;color:var(--gold-light);margin-top:4px}
+.hint-msg{display:none;margin-top:14px;font-size:.9rem;color:var(--muted);font-style:italic;line-height:1.5}
+.hint-msg.show{display:block}
+.completed{display:none;flex-direction:column;align-items:center;gap:16px;padding:48px 24px;text-align:center}
+.completed.show{display:flex}
+.completed h2{font-family:'Noto Serif',serif;color:var(--gold);font-size:1.6rem}
+.completed p{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Γραμματική</h1>
+  <button class="btn-reset" onclick="resetProgress()">↺ сброс</button>
+</div>
+<div class="progress-wrap">
+  <div class="progress-meta">
+    <span id="prog-label">Упражнение 1 из 10</span>
+    <span id="prog-done">0 выполнено</span>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+</div>
+<div class="card">
+  <div id="exercise-area">
+    <div class="exercise-label">Составьте предложение</div>
+    <div class="ru-sentence" id="ru-text"></div>
+    <div class="section-label">Ваш ответ</div>
+    <div class="slots" id="slots"></div>
+    <div class="section-label">Слова</div>
+    <div class="word-bank" id="word-bank"></div>
+    <div class="actions">
+      <button class="btn btn-check" id="btn-check" onclick="checkAnswer()">Проверить</button>
+      <button class="btn btn-clear" onclick="clearAnswer()">Очистить</button>
+      <button class="btn btn-next" id="btn-next" onclick="nextExercise()">Следующее →</button>
+    </div>
+    <div class="success-msg" id="success-msg">
+      ✓ Правильно!
+      <div class="el-answer" id="el-answer-display"></div>
+    </div>
+    <div class="hint-msg" id="hint-msg"></div>
+  </div>
+  <div class="completed" id="completed-area">
+    <div style="font-size:3rem">🏛️</div>
+    <h2>Все упражнения выполнены!</h2>
+    <p>Вы прошли все <span id="total-count"></span> упражнений.</p>
+    <button class="btn btn-next" style="display:inline-flex" onclick="resetProgress()">Начать заново</button>
+  </div>
+</div>
+<script src="trainer-data.js"></script>
+<script src="trainer-app.js"></script>
+</body>
+</html>
